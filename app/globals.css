@@ -1,26 +1,121 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
+  --thistle: #cdb4dbff;
+  --pastel-petal: #ffc8ddff;
+  --baby-pink: #ffafccff;
+  --icy-blue: #bde0feff;
+  --sky-blue: #a2d2ffff;
+  --background: #fff7fb;
   --foreground: #171717;
+  --ink: #4f304f;
+  --error: #9f2349;
+  --deep-petal: #d876a1;
+  --soft-gray: #e5e7eb;
+  --motion-ease: cubic-bezier(0.42, 0, 0.58, 1);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: Arial, Helvetica, sans-serif;
+  --font-mono: "Courier New", Courier, monospace;
 }
 
 body {
+  animation: palette-cycle 24s var(--motion-ease) infinite;
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+body::before,
+body::after {
+  position: fixed;
+  inset: -50vmax;
+  z-index: -1;
+  border-radius: 9999px;
+  content: "";
+  pointer-events: none;
+  transform: scale(0);
+  transform-origin: center;
+}
+
+body::before {
+  animation: palette-ripple 24s var(--motion-ease) infinite;
+}
+
+body::after {
+  animation: palette-ripple 24s var(--motion-ease) infinite 12s;
+}
+
+@keyframes palette-cycle {
+  0%,
+  100% {
+    background: var(--thistle);
+  }
+
+  20% {
+    background: var(--pastel-petal);
+  }
+
+  40% {
+    background: var(--baby-pink);
+  }
+
+  60% {
+    background: var(--icy-blue);
+  }
+
+  80% {
+    background: var(--sky-blue);
+  }
+}
+
+@keyframes palette-ripple {
+  0% {
+    background: var(--pastel-petal);
+    border-radius: 48% 52% 45% 55%;
+    opacity: 0;
+    transform: translate(-10vw, 8vh) scale(0);
+  }
+
+  12% {
+    opacity: 0.75;
+  }
+
+  30% {
+    background: var(--baby-pink);
+    border-radius: 58% 42% 54% 46%;
+    transform: translate(9vw, -7vh) scale(0.75);
+  }
+
+  55% {
+    background: var(--icy-blue);
+    border-radius: 44% 56% 60% 40%;
+    opacity: 0.65;
+    transform: translate(-6vw, -4vh) scale(1.12);
+  }
+
+  80% {
+    background: var(--sky-blue);
+    border-radius: 52% 48% 43% 57%;
+    opacity: 0.35;
+    transform: translate(5vw, 6vh) scale(1.42);
+  }
+
+  100% {
+    background: var(--thistle);
+    border-radius: 50%;
+    opacity: 0;
+    transform: translate(0, 0) scale(1.62);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body,
+  body::before,
+  body::after {
+    animation: none;
+  }
 }
