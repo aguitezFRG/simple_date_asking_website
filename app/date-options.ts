@@ -1,18 +1,16 @@
 export const dateOptions = {
   lunchPlace: [
-    "KPlaza",
-    "Sweet Keish",
-    "Jollibee",
     "McDonalds",
-    "Sushi Yo",
-    "Yaki-Yaki",
+    "Kawa",
+    "Dear Hotpot",
+    "Ramen Kuroda",
+    "Bonchon",
   ],
   preGoingHomeActivity: [
     "Potato Corner",
-    "Milk Tea",
-    "Burger",
-    "Donut",
-    "Pizza",
+    "Coco",
+    "KMart Shopping",
+    "Burger King",
   ],
 } as const;
 

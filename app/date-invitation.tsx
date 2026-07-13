@@ -56,7 +56,11 @@ function getSafePosition(
   return { left: maxLeft, top: maxTop };
 }
 
-export default function DateInvitation() {
+type DateInvitationProps = {
+  displayDate: string;
+};
+
+export default function DateInvitation({ displayDate }: DateInvitationProps) {
   const [stage, setStage] = useState<Stage>("invite");
   const [yesScale, setYesScale] = useState(1);
   const [noPosition, setNoPosition] = useState<Position>(null);
@@ -297,7 +301,7 @@ export default function DateInvitation() {
     <main className="relative flex min-h-dvh overflow-hidden px-6 py-10">
       <section className="mx-auto flex w-full max-w-4xl flex-col items-center justify-center text-center">
         <p className="mb-5 text-sm font-semibold uppercase tracking-[0.2em] text-[var(--ink)]">
-          June 13
+          {displayDate}
         </p>
         <h1
           ref={titleRef}
