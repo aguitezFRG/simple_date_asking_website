@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import type { DateFormConfiguration, DateFormField } from "../../../lib/date-forms/schema";
 
 type Stage = "invite" | "wizard" | "success";
@@ -17,6 +17,11 @@ export default function CustomDateForm({ publicId, configuration, showShareNotic
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [shareUrl, setShareUrl] = useState(`/form/${publicId}`);
+
+  useEffect(() => {
+    setShareUrl(`${window.location.origin}/form/${publicId}`);
+  }, [publicId]);
 
   const step = configuration.steps[stepIndex];
 
@@ -85,7 +90,7 @@ export default function CustomDateForm({ publicId, configuration, showShareNotic
           {showShareNotice ? (
             <div className="mx-auto mb-8 max-w-2xl rounded-[8px] border-2 border-[var(--soft-gray)] bg-white/90 p-4 text-left text-sm text-[var(--ink)] shadow-lg">
               <p className="font-black">Your form is ready.</p>
-              <p className="mt-1 break-all">Share this URL: {window.location.href.replace("?created=1", "")}</p>
+              <p className="mt-1 break-all">Share this URL: {shareUrl}</p>
             </div>
           ) : null}
           {configuration.displayDate ? (
