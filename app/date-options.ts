@@ -4,13 +4,16 @@ export const dateOptions = {
     "Kawa",
     "Dear Hotpot",
     "Ramen Kuroda",
-    "Bonchon",
+    "MyLaksa",
+    "Cafelandia",
   ],
   preGoingHomeActivity: [
     "Potato Corner",
-    "Coco",
     "KMart Shopping",
-    "Burger King",
+    "Tomoro Coffee",
+    "Choco Avenue",
+    "711",
+    "McDonalds",
   ],
 } as const;
 
