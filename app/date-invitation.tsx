@@ -184,7 +184,6 @@ export default function DateInvitation({ displayDate }: DateInvitationProps) {
             </h1>
           </div>
 
-
           <div className="grid gap-5">
             <label className="grid gap-2 text-sm font-semibold text-[var(--ink)]">
               Your Email
@@ -226,7 +225,7 @@ export default function DateInvitation({ displayDate }: DateInvitationProps) {
                 onChange={(event) => setLunchPlace(event.target.value)}
                 required
               >
-                <option value="">Choose one</option>
+                {!lunchPlace ? <option value="">Choose one</option> : null}
                 {dateOptions.lunchPlace.map((option) => (
                   <option key={option} value={option}>
                     {option}
@@ -256,7 +255,7 @@ export default function DateInvitation({ displayDate }: DateInvitationProps) {
                 onChange={(event) => setActivity(event.target.value)}
                 required
               >
-                <option value="">Choose one</option>
+                {!activity ? <option value="">Choose one</option> : null}
                 {dateOptions.preGoingHomeActivity.map((option) => (
                   <option key={option} value={option}>
                     {option}
