@@ -61,6 +61,9 @@ export function validateDateFormConfiguration(input: unknown): ValidationResult 
     source.email && typeof source.email === "object"
       ? (source.email as Record<string, unknown>)
       : {};
+  const unsupportedEmailKeys = Object.keys(emailSource).filter(
+    (key) => key !== "sender" && key !== "recipient",
+  );
   const sender = text(emailSource.sender, 254).toLowerCase();
   const recipient = text(emailSource.recipient, 254).toLowerCase();
   const rawSteps = Array.isArray(source.steps) ? source.steps : [];
@@ -68,6 +71,9 @@ export function validateDateFormConfiguration(input: unknown): ValidationResult 
   if (!title) errors.push("A form title is required.");
   if (!invitationQuestion) errors.push("An invitation question is required.");
   if (!successMessage) errors.push("A success message is required.");
+  if (unsupportedEmailKeys.length > 0) {
+    errors.push("Email configuration may contain only sender and recipient.");
+  }
   if (!EMAIL_PATTERN.test(sender)) errors.push("Enter a valid sender email address.");
   if (!EMAIL_PATTERN.test(recipient)) errors.push("Enter a valid recipient email address.");
   if (rawSteps.length < 1) errors.push("Add at least one wizard step.");
@@ -107,13 +113,17 @@ export function validateDateFormConfiguration(input: unknown): ValidationResult 
       const label = text(fieldSource.label, 120);
       const placeholder = text(fieldSource.placeholder, 160);
       const required = fieldSource.required === true;
-      const options = Array.isArray(fieldSource.options)
-        ? fieldSource.options
-            .map((option) => text(option, 100))
-            .filter(Boolean)
-            .slice(0, MAX_OPTIONS_PER_FIELD)
-        : [];
+      const rawOptions = Array.isArray(fieldSource.options) ? fieldSource.options : [];
+      const options = rawOptions
+        .map((option) => text(option, 100))
+        .filter(Boolean)
+        .slice(0, MAX_OPTIONS_PER_FIELD);
 
+      if (rawOptions.length > MAX_OPTIONS_PER_FIELD) {
+        errors.push(
+          `Field ${fieldId || fieldIndex + 1} can contain at most ${MAX_OPTIONS_PER_FIELD} options.`,
+        );
+      }
       if (!ID_PATTERN.test(fieldId) || seenFieldIds.has(fieldId)) {
         errors.push(
           `Field ${fieldIndex + 1} in step ${stepIndex + 1} must have a unique valid identifier.`,
