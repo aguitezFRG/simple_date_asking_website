@@ -8,5 +8,10 @@ export default async function DemoPage({
 }) {
   const { date } = await searchParams;
 
-  return <DateInvitation displayDate={getDisplayDateFromSearchParam(date)} />;
+  return (
+    <DateInvitation
+      displayDate={getDisplayDateFromSearchParam(date)}
+      showDemoActions
+    />
+  );
 }

@@ -1,14 +1,19 @@
 import nodemailer from "nodemailer";
-import { getDateForm } from "../../../../../lib/date-forms/storage";
+import {
+  getDateFormForSubmission,
+  getDateFormLookup,
+} from "../../../../../lib/date-forms/storage";
 import {
   isPublicFormId,
   validateDateFormAnswers,
+  validateRespondentEmail,
 } from "../../../../../lib/date-forms/schema";
 
 export const runtime = "nodejs";
 
 type ResponsePayload = {
   answers?: unknown;
+  respondentEmail?: unknown;
 };
 
 function jsonError(error: string, status: number) {
@@ -33,14 +38,19 @@ export async function POST(
     return jsonError("This date form is unavailable or expired.", 404);
   }
 
-  let form;
+  let publicForm;
   try {
-    form = await getDateForm(publicId);
+    const lookup = await getDateFormLookup(publicId);
+    if (lookup.status === "expired") {
+      return jsonError("This form has expired.", 410);
+    }
+    if (lookup.status !== "active") {
+      return jsonError("This date form is unavailable.", 404);
+    }
+    publicForm = lookup.form;
   } catch {
     return jsonError("Date-form storage is unavailable.", 503);
   }
-
-  if (!form) return jsonError("This date form is unavailable or expired.", 404);
 
   let payload: ResponsePayload;
   try {
@@ -49,14 +59,20 @@ export async function POST(
     return jsonError("Invalid JSON payload.", 400);
   }
 
-  const validation = validateDateFormAnswers(form.configuration, payload.answers);
-  if (!validation.ok) return jsonError(validation.errors[0], 400);
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    return jsonError("Invalid response payload.", 400);
+  }
 
-  const allowedFields = form.configuration.steps.flatMap((step) => step.fields);
-  const answers = allowedFields.flatMap((field) => {
-    const value = validation.value[field.id];
-    return value ? [{ label: field.label, value }] : [];
-  });
+  const payloadKeys = Object.keys(payload as Record<string, unknown>);
+  if (payloadKeys.some((key) => key !== "answers" && key !== "respondentEmail")) {
+    return jsonError("The response contains unsupported properties.", 400);
+  }
+
+  const respondentEmail = validateRespondentEmail(payload.respondentEmail);
+  if (!respondentEmail.ok) return jsonError(respondentEmail.errors[0], 400);
+
+  const validation = validateDateFormAnswers(publicForm.configuration, payload.answers);
+  if (!validation.ok) return jsonError(validation.errors[0], 400);
 
   const smtpHost = process.env.SMTP_HOST;
   const smtpPort = Number(process.env.SMTP_PORT ?? "465");
@@ -68,8 +84,30 @@ export async function POST(
     return jsonError("Email delivery is not configured.", 500);
   }
 
-  const textDetails = answers.map(({ label, value }) => `${label}: ${value}`).join("\n");
-  const htmlDetails = answers
+  let form;
+  try {
+    form = await getDateFormForSubmission(publicId);
+  } catch {
+    return jsonError("Date-form storage is unavailable.", 503);
+  }
+  if (!form) return jsonError("This form has expired.", 410);
+
+  const finalValidation = validateDateFormAnswers(form.configuration, payload.answers);
+  if (!finalValidation.ok) return jsonError(finalValidation.errors[0], 400);
+  const allowedFields = form.configuration.steps.flatMap((step) => step.fields);
+  const answers = allowedFields.flatMap((field) => {
+    const value = finalValidation.value[field.id];
+    return value ? [{ label: field.label, value }] : [];
+  });
+
+  const textDetails = [
+    `Your email: ${respondentEmail.value}`,
+    ...answers.map(({ label, value }) => `${label}: ${value}`),
+  ].join("\n");
+  const htmlDetails = [
+    { label: "Your email", value: respondentEmail.value },
+    ...answers,
+  ]
     .map(
       ({ label, value }) =>
         `<tr><td style="padding:12px;border-bottom:1px solid #ead9dc"><strong>${escapeHtml(label)}</strong><br>${escapeHtml(value)}</td></tr>`,
@@ -83,24 +121,14 @@ export async function POST(
   });
 
   try {
-    await Promise.all([
-      transporter.sendMail({
-        from,
-        to: form.configuration.email.recipient,
-        replyTo: form.configuration.email.sender,
-        subject: `Response to ${form.configuration.title}`,
-        text: `A response was submitted.\n\n${textDetails}`,
-        html: `<h1>${escapeHtml(form.configuration.title)}</h1><p>A response was submitted.</p><table>${htmlDetails}</table>`,
-      }),
-      transporter.sendMail({
-        from,
-        to: form.configuration.email.sender,
-        replyTo: form.configuration.email.recipient,
-        subject: `Your response to ${form.configuration.title} was sent`,
-        text: `Your response was sent successfully.\n\n${textDetails}`,
-        html: `<h1>Response sent</h1><p>Your response to ${escapeHtml(form.configuration.title)} was sent successfully.</p><table>${htmlDetails}</table>`,
-      }),
-    ]);
+    await transporter.sendMail({
+      from,
+      to: form.creator_email,
+      replyTo: respondentEmail.value,
+      subject: `Response to ${form.configuration.title}`,
+      text: `A response was submitted.\n\n${textDetails}`,
+      html: `<h1>${escapeHtml(form.configuration.title)}</h1><p>A response was submitted.</p><table>${htmlDetails}</table>`,
+    });
 
     return Response.json(
       { ok: true, publicId },

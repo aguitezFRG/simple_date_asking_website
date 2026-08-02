@@ -1,28 +1,29 @@
 import { notFound } from "next/navigation";
-import { getDateForm } from "../../../lib/date-forms/storage";
+import { getDateFormLookup } from "../../../lib/date-forms/storage";
 import { isPublicFormId } from "../../../lib/date-forms/schema";
 import CustomDateForm from "./custom-date-form";
+import ExpiredDateForm from "./expired-form";
 
 export const dynamic = "force-dynamic";
 
 export default async function PublicDateFormPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ publicId: string }>;
-  searchParams: Promise<{ created?: string }>;
 }) {
-  const [{ publicId }, { created }] = await Promise.all([params, searchParams]);
+  const { publicId } = await params;
   if (!isPublicFormId(publicId)) notFound();
-  const form = await getDateForm(publicId);
+  const result = await getDateFormLookup(publicId);
 
-  if (!form) notFound();
+  if (result.status === "expired") return <ExpiredDateForm />;
+  if (result.status !== "active") notFound();
+  const form = result.form;
 
   return (
     <CustomDateForm
       configuration={form.configuration}
       publicId={form.public_id}
-      showShareNotice={created === "1"}
+      expiresAt={form.expires_at!}
     />
   );
 }

@@ -15,5 +15,8 @@
 - Generated Vercel deployment URLs can be protected even for production deployments. Smoke tests retrieve the configured automation-bypass value through the authenticated project API, use it only in request headers, and never print or persist it; stable production aliases are verified separately.
 - Project-scoped agent documentation retains Light, Medium, and explicitly delegated Heavy routes. Light and Medium are Sol-only; Heavy permits bounded Luna assistance under Sol review. No persistent Luna TOML is stored in this repository.
 - Work branches use `agent/<short-kebab-description>`, start from the latest fetched `origin/main`, and are published through pull requests rather than direct commits to `main`. Existing genuine task branches are reused and updated without discarding local work.
+- Creator publication trusts Supabase Auth `getUser()` and `email_confirmed_at`; browser-supplied identity, destination, verification, and timestamps are rejected. Verified sessions are reusable and no account dashboard or URL recovery is provided.
+- Schema version 2 excludes creator email from public configuration and models required respondent email separately. The demo uses the same reusable preset but remains presentation-only because it has no verified creator destination.
+- Database triggers stamp exact three-day `timestamptz` expiration. A private, non-public `pg_cron` function deletes expired forms hourly, logs successful counts, and relies on cron run details for failures.
 
 Record only verified architecture decisions, discarded approaches, and lessons here. Do not use this diary as a live status log; active state belongs in the Sol-owned status documents.

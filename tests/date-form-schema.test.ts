@@ -5,6 +5,7 @@ import {
   isPublicFormId,
   validateDateFormAnswers,
   validateDateFormConfiguration,
+  validateRespondentEmail,
   type DateFormConfiguration,
 } from "../lib/date-forms/schema";
 import { validConfiguration } from "./fixtures";
@@ -21,15 +22,14 @@ function field(index: number, type = "text") {
 describe("date-form configuration validation", () => {
   it("accepts and normalizes a valid versioned custom form", () => {
     const configuration = validConfiguration();
-    configuration.email.sender = " SENDER@Example.com ";
     const result = validateDateFormConfiguration(configuration);
 
     expect(result.ok).toBe(true);
-    if (result.ok) expect(result.value.email.sender).toBe("sender@example.com");
+    if (result.ok) expect(result.value.title).toBe("Date form");
   });
 
   it("rejects an absent or unsupported schema version", () => {
-    const configuration = { ...validConfiguration(), version: 2 };
+    const configuration = { ...validConfiguration(), version: 1 };
     const result = validateDateFormConfiguration(configuration);
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.errors.join(" ")).toContain("schema version");
@@ -58,33 +58,30 @@ describe("date-form configuration validation", () => {
     if (!result.ok) expect(result.errors.join(" ")).toContain("form elements");
   });
 
-  it("allows only sender and recipient in email configuration", () => {
+  it("rejects creator identity, timestamps, and legacy email configuration", () => {
     const configuration = {
       ...validConfiguration(),
-      email: {
-        sender: "sender@example.com",
-        recipient: "recipient@example.com",
-        subject: "Not configurable",
-      },
+      email: { sender: "forged@example.com", recipient: "forged@example.com" },
+      creatorUserId: "forged",
+      creatorEmail: "forged@example.com",
+      createdAt: "2099-01-01T00:00:00Z",
+      expiresAt: "2099-01-04T00:00:00Z",
     };
     const result = validateDateFormConfiguration(configuration);
     expect(result.ok).toBe(false);
-    if (!result.ok) expect(result.errors.join(" ")).toContain("only sender and recipient");
+    if (!result.ok) expect(result.errors.join(" ")).toContain("unsupported properties");
   });
 
-  it("rejects malformed and adversarial email input with bounded linear validation", () => {
-    const configuration = validConfiguration();
-    configuration.email.sender = `!@!.${"!.".repeat(50_000)}`;
-    configuration.email.recipient = "recipient @example.com";
-
-    const result = validateDateFormConfiguration(configuration);
-
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.errors).toContain("Sender email must contain at most 254 characters.");
-      expect(result.errors).toContain("Enter a valid sender email address.");
-      expect(result.errors).toContain("Enter a valid recipient email address.");
-    }
+  it("validates and normalizes the permanent respondent email separately", () => {
+    expect(validateRespondentEmail("  Respondent@Example.com ")).toEqual({
+      ok: true,
+      value: "respondent@example.com",
+    });
+    expect(validateRespondentEmail("")).toEqual({
+      ok: false,
+      errors: ["Your email is required."],
+    });
+    expect(validateRespondentEmail(`!@!.${"!.".repeat(50_000)}`).ok).toBe(false);
   });
 
   it("rejects duplicate identifiers, options, and oversized values", () => {
