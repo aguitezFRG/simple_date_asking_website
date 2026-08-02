@@ -22,6 +22,7 @@ vi.mock("nodemailer", () => ({
 import { POST as createForm } from "../app/api/date-forms/route";
 import { GET as retrieveForm } from "../app/api/date-forms/[publicId]/route";
 import { POST as submitResponse } from "../app/api/date-forms/[publicId]/responses/route";
+import { POST as submitDefaultResponse } from "../app/api/submit-date/route";
 
 const publicId = "f_abcdefghijklmnopqrstuvwx";
 
@@ -149,5 +150,27 @@ describe("POST /api/date-forms/[publicId]/responses", () => {
     );
     expect(response.status).toBe(404);
     expect(storage.getDateForm).toHaveBeenCalledWith(publicId);
+  });
+});
+
+describe("POST /api/submit-date", () => {
+  it("rejects adversarial email input with the shared linear validator", async () => {
+    const response = await submitDefaultResponse(
+      new Request("http://localhost/api/submit-date", {
+        method: "POST",
+        body: JSON.stringify({
+          recipientEmail: `!@!.${"!.".repeat(50_000)}`,
+          respondentEmail: "respondent@example.com",
+          lunchPlace: "Cafe",
+          activity: "Walk",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({
+      error: "Enter a valid recipient email address.",
+    });
+    expect(mailer.sendMail).not.toHaveBeenCalled();
   });
 });

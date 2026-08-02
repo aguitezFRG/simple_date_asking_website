@@ -49,7 +49,7 @@ function normalizedText(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function isEmailAddress(value: string) {
+export function isValidEmailAddress(value: string) {
   if (!value || value.length > 254) return false;
 
   const atIndex = value.indexOf("@");
@@ -135,8 +135,8 @@ export function validateDateFormConfiguration(input: unknown): ValidationResult 
   if (unsupportedEmailKeys.length > 0) {
     errors.push("Email configuration may contain only sender and recipient.");
   }
-  if (!isEmailAddress(sender)) errors.push("Enter a valid sender email address.");
-  if (!isEmailAddress(recipient)) errors.push("Enter a valid recipient email address.");
+  if (!isValidEmailAddress(sender)) errors.push("Enter a valid sender email address.");
+  if (!isValidEmailAddress(recipient)) errors.push("Enter a valid recipient email address.");
   if (rawSteps.length < 1) errors.push("Add at least one wizard step.");
   if (rawSteps.length > MAX_WIZARD_STEPS) {
     errors.push(`A form can contain at most ${MAX_WIZARD_STEPS} wizard steps.`);

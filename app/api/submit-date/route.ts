@@ -1,8 +1,7 @@
 import nodemailer from "nodemailer";
+import { isValidEmailAddress } from "../../../lib/date-forms/schema";
 
 export const runtime = "nodejs";
-
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type Submission = {
   recipientEmail?: unknown;
@@ -135,11 +134,11 @@ export async function POST(request: Request) {
   const lunchPlace = textField(body.lunchPlace);
   const activity = textField(body.activity);
 
-  if (!EMAIL_PATTERN.test(recipientEmail)) {
+  if (!isValidEmailAddress(recipientEmail)) {
     return jsonError("Enter a valid recipient email address.", 400);
   }
 
-  if (!EMAIL_PATTERN.test(respondentEmail)) {
+  if (!isValidEmailAddress(respondentEmail)) {
     return jsonError("Enter a valid email address.", 400);
   }
 
