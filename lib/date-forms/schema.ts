@@ -1,4 +1,4 @@
-export const DATE_FORM_SCHEMA_VERSION = 1;
+export const DATE_FORM_SCHEMA_VERSION = 2;
 export const MAX_WIZARD_STEPS = 3;
 export const MAX_FORM_ELEMENTS = 10;
 export const MAX_OPTIONS_PER_FIELD = 12;
@@ -15,6 +15,7 @@ export type DateFormField = {
   required: boolean;
   placeholder?: string;
   options?: string[];
+  allowOther?: boolean;
 };
 
 export type DateFormStep = {
@@ -30,12 +31,15 @@ export type DateFormConfiguration = {
   invitationQuestion: string;
   successMessage: string;
   displayDate?: string;
-  email: {
-    sender: string;
-    recipient: string;
-  };
   steps: DateFormStep[];
 };
+
+export const SYSTEM_RESPONDENT_EMAIL_FIELD = {
+  id: "respondent_email",
+  label: "Your email",
+  type: "email",
+  required: true,
+} as const;
 
 export type ValidationResult<T = DateFormConfiguration> =
   | { ok: true; value: T }
@@ -110,21 +114,18 @@ export function validateDateFormConfiguration(input: unknown): ValidationResult 
   );
   const successMessage = boundedText(source.successMessage, 180, "Success message", errors);
   const displayDate = boundedText(source.displayDate, 80, "Display date", errors);
-  const emailSource =
-    source.email && typeof source.email === "object" && !Array.isArray(source.email)
-      ? (source.email as Record<string, unknown>)
-      : {};
-  const unsupportedEmailKeys = Object.keys(emailSource).filter(
-    (key) => key !== "sender" && key !== "recipient",
-  );
-  const sender = boundedText(emailSource.sender, 254, "Sender email", errors).toLowerCase();
-  const recipient = boundedText(
-    emailSource.recipient,
-    254,
-    "Recipient email",
-    errors,
-  ).toLowerCase();
   const rawSteps = Array.isArray(source.steps) ? source.steps : [];
+  const allowedConfigurationKeys = new Set([
+    "version",
+    "title",
+    "invitationQuestion",
+    "successMessage",
+    "displayDate",
+    "steps",
+  ]);
+  if (Object.keys(source).some((key) => !allowedConfigurationKeys.has(key))) {
+    errors.push("The form configuration contains unsupported properties.");
+  }
 
   if (source.version !== DATE_FORM_SCHEMA_VERSION) {
     errors.push(`Form schema version must be ${DATE_FORM_SCHEMA_VERSION}.`);
@@ -132,11 +133,6 @@ export function validateDateFormConfiguration(input: unknown): ValidationResult 
   if (!title) errors.push("A form title is required.");
   if (!invitationQuestion) errors.push("An invitation question is required.");
   if (!successMessage) errors.push("A success message is required.");
-  if (unsupportedEmailKeys.length > 0) {
-    errors.push("Email configuration may contain only sender and recipient.");
-  }
-  if (!isValidEmailAddress(sender)) errors.push("Enter a valid sender email address.");
-  if (!isValidEmailAddress(recipient)) errors.push("Enter a valid recipient email address.");
   if (rawSteps.length < 1) errors.push("Add at least one wizard step.");
   if (rawSteps.length > MAX_WIZARD_STEPS) {
     errors.push(`A form can contain at most ${MAX_WIZARD_STEPS} wizard steps.`);
@@ -161,6 +157,11 @@ export function validateDateFormConfiguration(input: unknown): ValidationResult 
       errors,
     );
     const rawFields = Array.isArray(stepSource.fields) ? stepSource.fields : [];
+    const allowedStepKeys = new Set(["id", "title", "description", "fields"]);
+
+    if (Object.keys(stepSource).some((key) => !allowedStepKeys.has(key))) {
+      errors.push(`Step ${stepIndex + 1} contains unsupported properties.`);
+    }
 
     if (!ID_PATTERN.test(id) || seenStepIds.has(id)) {
       errors.push(`Step ${stepIndex + 1} must have a unique valid identifier.`);
@@ -187,7 +188,17 @@ export function validateDateFormConfiguration(input: unknown): ValidationResult 
         errors,
       );
       const required = fieldSource.required === true;
+      const allowOther = fieldSource.allowOther === true;
       const rawOptions = Array.isArray(fieldSource.options) ? fieldSource.options : [];
+      const allowedFieldKeys = new Set([
+        "id",
+        "type",
+        "label",
+        "required",
+        "placeholder",
+        "options",
+        "allowOther",
+      ]);
       const options = rawOptions.map((option, optionIndex) =>
         boundedText(option, 100, `${fieldLabel} option ${optionIndex + 1}`, errors),
       );
@@ -200,6 +211,9 @@ export function validateDateFormConfiguration(input: unknown): ValidationResult 
       }
       if (new Set(options).size !== options.length) {
         errors.push(`${fieldLabel} options must be unique.`);
+      }
+      if (Object.keys(fieldSource).some((key) => !allowedFieldKeys.has(key))) {
+        errors.push(`${fieldLabel} contains unsupported properties.`);
       }
       if (!ID_PATTERN.test(fieldId) || seenFieldIds.has(fieldId)) {
         errors.push(`${fieldLabel} must have a unique valid identifier.`);
@@ -219,6 +233,9 @@ export function validateDateFormConfiguration(input: unknown): ValidationResult 
           required,
           ...(placeholder ? { placeholder } : {}),
           ...(type === "select" || type === "radio" ? { options } : {}),
+          ...(allowOther && (type === "select" || type === "radio")
+            ? { allowOther: true }
+            : {}),
         });
       }
     });
@@ -244,7 +261,6 @@ export function validateDateFormConfiguration(input: unknown): ValidationResult 
       invitationQuestion,
       successMessage,
       ...(displayDate ? { displayDate } : {}),
-      email: { sender, recipient },
       steps,
     },
   };
@@ -283,6 +299,7 @@ export function validateDateFormAnswers(
     if (
       value &&
       (field.type === "select" || field.type === "radio") &&
+      !field.allowOther &&
       !(field.options ?? []).includes(value)
     ) {
       errors.push(`The answer for “${field.label}” is invalid.`);
@@ -296,4 +313,13 @@ export function validateDateFormAnswers(
   return errors.length > 0
     ? { ok: false, errors: [...new Set(errors)] }
     : { ok: true, value: answers };
+}
+
+export function validateRespondentEmail(input: unknown): ValidationResult<string> {
+  const email = normalizedText(input).toLowerCase();
+  if (!email) return { ok: false, errors: ["Your email is required."] };
+  if (!isValidEmailAddress(email)) {
+    return { ok: false, errors: ["Enter a valid email address."] };
+  }
+  return { ok: true, value: email };
 }

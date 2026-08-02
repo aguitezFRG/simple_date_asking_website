@@ -9,7 +9,7 @@ export default function PublicDateFormNotFound() {
           The link may be invalid, missing, disabled, expired, or no longer available.
         </p>
         <Link className="mt-7 inline-flex h-12 items-center rounded-[8px] border-2 border-[var(--soft-gray)] bg-[var(--baby-pink)] px-5 font-black text-[var(--ink)]" href="/">
-          Return home
+          Back to Home
         </Link>
       </section>
     </main>

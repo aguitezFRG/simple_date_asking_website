@@ -14,7 +14,14 @@ import {
   createDateForm,
   createPublicFormId,
   getDateForm,
+  getDateFormLookup,
+  getDateFormForSubmission,
 } from "../lib/date-forms/storage";
+
+const verifiedCreator = {
+  userId: "b0a7fe8f-f3df-4476-bec5-48bc54746c6c",
+  email: "creator@example.com",
+};
 
 function storedForm(configuration = validConfiguration()) {
   return {
@@ -22,7 +29,7 @@ function storedForm(configuration = validConfiguration()) {
     public_id: "f_abcdefghijklmnopqrstuvwx",
     configuration,
     created_at: "2026-08-03 00:00:00+00",
-    expires_at: null,
+    expires_at: "2026-08-06 00:00:00+00",
     is_active: true,
   };
 }
@@ -53,7 +60,7 @@ describe("direct server-side database storage", () => {
   it("inserts the validated JSON and returns the generated public identifier", async () => {
     const expected = storedForm();
     const sql = sqlReturning([expected]);
-    await expect(createDateForm(validConfiguration())).resolves.toEqual(expected);
+    await expect(createDateForm(validConfiguration(), verifiedCreator)).resolves.toEqual(expected);
     expect(sql.json).toHaveBeenCalledWith(validConfiguration());
     expect(sql).toHaveBeenCalledOnce();
   });
@@ -72,6 +79,19 @@ describe("direct server-side database storage", () => {
   it("returns missing, disabled, and expired records as unavailable", async () => {
     sqlReturning([]);
     await expect(getDateForm("f_abcdefghijklmnopqrstuvwx")).resolves.toBeNull();
+  });
+
+  it("distinguishes the exact expired boundary from missing forms", async () => {
+    sqlReturning([{ ...storedForm(), is_expired: true }]);
+    await expect(getDateFormLookup("f_abcdefghijklmnopqrstuvwx")).resolves.toEqual({
+      status: "expired",
+    });
+  });
+
+  it("retrieves the private creator destination only for submission", async () => {
+    const expected = { ...storedForm(), creator_email: verifiedCreator.email };
+    sqlReturning([expected]);
+    await expect(getDateFormForSubmission(expected.public_id)).resolves.toEqual(expected);
   });
 
   it("rejects invalid JSON even if storage contains it", async () => {
@@ -100,5 +120,17 @@ describe("database authorization migration", () => {
     expect(policyMigration).toContain("to anon, authenticated");
     expect(policyMigration).toContain("using (false)");
     expect(policyMigration).toContain("with check (false)");
+  });
+
+  it("enforces exact expiry and a private hourly cleanup function", () => {
+    const migration = readFileSync(
+      "supabase/migrations/20260803110000_verified_creator_form_lifecycle.sql",
+      "utf8",
+    );
+    expect(migration).toContain("expires_at = created_at + interval '3 days'");
+    expect(migration).toContain("where expires_at <= transaction_timestamp()");
+    expect(migration).toContain("'0 * * * *'");
+    expect(migration).toContain("revoke all on function private.cleanup_expired_date_forms()");
+    expect(migration).toContain("create index if not exists date_forms_expires_at_idx");
   });
 });

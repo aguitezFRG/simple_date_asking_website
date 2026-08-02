@@ -1,4 +1,4 @@
-import { getDateForm } from "../../../../lib/date-forms/storage";
+import { getDateFormLookup } from "../../../../lib/date-forms/storage";
 import { isPublicFormId } from "../../../../lib/date-forms/schema";
 
 export const runtime = "nodejs";
@@ -15,11 +15,20 @@ export async function GET(
   }
 
   try {
-    const form = await getDateForm(publicId);
+    const result = await getDateFormLookup(publicId);
 
-    if (!form) {
+    if (result.status === "expired") {
+      return Response.json(
+        { code: "FORM_EXPIRED", error: "This form has expired." },
+        { status: 410 },
+      );
+    }
+
+    if (result.status !== "active") {
       return Response.json({ error: "Date form not found." }, { status: 404 });
     }
+
+    const form = result.form;
 
     return Response.json(
       {

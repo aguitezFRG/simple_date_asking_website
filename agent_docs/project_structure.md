@@ -5,21 +5,23 @@ The verified application and workflow layout is:
 ```text
 app/
   page.tsx                  # two-choice landing route
-  demo/page.tsx             # original no-storage invitation
-  create/                   # custom form builder
-  form/[publicId]/          # stored custom wizard and graceful states
+  demo/                     # presentation-only shared-preset invitation and actions
+  create/                   # draft-aware builder, Auth verification, preview, success
+  auth/confirm/             # allowlisted Supabase Auth callback
+  form/[publicId]/          # active custom wizard, success, and expired states
   [dateParam]/page.tsx      # date-segment invitation route
   date-invitation.tsx       # client invitation, form, and success flow
   date-options.ts           # lunch and activity choices
   display-date.ts           # date-token validation and formatting
-  api/submit-date/route.ts  # Node.js POST endpoint and SMTP delivery
-  api/date-forms/           # create, retrieve, and submit custom forms
+  api/submit-date/route.ts  # disabled legacy demo delivery endpoint
+  api/creator-auth/         # private verification status, send, and sign-out API
+  api/date-forms/           # verified creation, safe retrieval, secure submission
   layout.tsx                # root metadata and document shell
   globals.css               # global styles
 public/                     # checked-in public assets
-lib/date-forms/             # shared schema, answer validation, and storage
-lib/supabase/server.ts      # server-only pooled Postgres client
-supabase/migrations/        # date_forms schema and access controls
+lib/date-forms/             # shared v2 schema, demo preset, draft key, and storage
+lib/supabase/               # server-only pooled Postgres and cookie Auth clients
+supabase/migrations/        # lifecycle schema, RLS, private cleanup, and hourly cron
 tests/                      # Vitest schema, UI, route, and storage coverage
 .github/workflows/
   check-and-vercel-redeploy.yml

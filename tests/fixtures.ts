@@ -9,10 +9,6 @@ export function validConfiguration(): DateFormConfiguration {
     title: "Date form",
     invitationQuestion: "Would you like to be my date?",
     successMessage: "See you there!",
-    email: {
-      sender: "sender@example.com",
-      recipient: "recipient@example.com",
-    },
     steps: [
       {
         id: "step_1",
