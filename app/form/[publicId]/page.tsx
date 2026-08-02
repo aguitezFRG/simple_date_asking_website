@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getDateForm } from "../../../lib/date-forms/storage";
+import { isPublicFormId } from "../../../lib/date-forms/schema";
 import CustomDateForm from "./custom-date-form";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +13,7 @@ export default async function PublicDateFormPage({
   searchParams: Promise<{ created?: string }>;
 }) {
   const [{ publicId }, { created }] = await Promise.all([params, searchParams]);
+  if (!isPublicFormId(publicId)) notFound();
   const form = await getDateForm(publicId);
 
   if (!form) notFound();

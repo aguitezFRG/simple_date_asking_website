@@ -1,6 +1,14 @@
 import Link from "next/link";
 
-export default function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ date?: string | string[] }>;
+}) {
+  const { date } = await searchParams;
+  const dateValue = Array.isArray(date) ? date[0] : date;
+  const demoHref = dateValue ? `/demo?date=${encodeURIComponent(dateValue)}` : "/demo";
+
   return (
     <main className="flex min-h-dvh items-center justify-center px-6 py-10">
       <section className="w-full max-w-3xl rounded-[8px] border-2 border-[var(--soft-gray)] bg-white/85 p-7 text-center shadow-xl shadow-[var(--thistle)] outline outline-4 outline-white/50 backdrop-blur sm:p-12">
@@ -19,11 +27,11 @@ export default function Home() {
             className="flex min-h-24 items-center justify-center rounded-[8px] border-2 border-[var(--soft-gray)] bg-[var(--baby-pink)] px-6 py-5 text-lg font-black text-[var(--ink)] outline outline-2 outline-[var(--soft-gray)] transition hover:bg-[var(--pastel-petal)] focus-visible:outline-4"
             href="/create"
           >
-            Make your own date form
+            Make Your Own Date Form
           </Link>
           <Link
             className="flex min-h-24 items-center justify-center rounded-[8px] border-2 border-[var(--soft-gray)] bg-white px-6 py-5 text-lg font-black text-[var(--ink)] outline outline-2 outline-[var(--soft-gray)] transition hover:bg-[var(--icy-blue)] focus-visible:outline-4"
-            href="/demo"
+            href={demoHref}
           >
             View Demo
           </Link>

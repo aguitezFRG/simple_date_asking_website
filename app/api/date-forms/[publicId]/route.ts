@@ -1,4 +1,5 @@
 import { getDateForm } from "../../../../lib/date-forms/storage";
+import { isPublicFormId } from "../../../../lib/date-forms/schema";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -8,6 +9,10 @@ export async function GET(
   { params }: { params: Promise<{ publicId: string }> },
 ) {
   const { publicId } = await params;
+
+  if (!isPublicFormId(publicId)) {
+    return Response.json({ error: "Date form not found." }, { status: 404 });
+  }
 
   try {
     const form = await getDateForm(publicId);

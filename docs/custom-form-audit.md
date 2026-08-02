@@ -15,7 +15,7 @@
 1. The base route currently opens the invitation directly, so it must become the two-choice entry experience.
 2. The existing `[dateParam]` route conflicts conceptually with a public form identifier. Saved forms therefore use the explicit route `/form/[publicId]`.
 3. The existing invitation component is tightly coupled to the default fields. It should remain as the demo while custom forms use a separate schema-driven renderer.
-4. SMTP credentials and the Supabase secret key must remain available only in route handlers/server modules.
+4. SMTP credentials and the pooled Supabase connection string must remain available only in route handlers/server modules.
 5. Builder limits require shared validation used by both the browser and server: at most three wizard steps and at most ten fields total.
 6. The configurable email section is limited to two values: `sender` and `recipient`. No subject, SMTP sender, reply-to override, or arbitrary email header is stored in a public configuration.
 7. Public saved-form reads must reject inactive and expired records.
@@ -23,4 +23,4 @@
 
 ## Deployment and checks
 
-The repository exposes `npm run lint` and `npm run build`. No test framework is currently declared in `package.json`; test coverage must be added without weakening those existing checks. Deployment is Vercel-oriented through the Next.js application and repository workflow configuration.
+The repository now uses Vitest with jsdom and Testing Library for schema, UI, route, and storage regressions. `pnpm check` also retains lint, typecheck, and the production build. Deployment remains Vercel-oriented through the existing checked main-only workflow.

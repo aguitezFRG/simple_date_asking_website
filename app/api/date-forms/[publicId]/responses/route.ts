@@ -1,5 +1,9 @@
 import nodemailer from "nodemailer";
 import { getDateForm } from "../../../../../lib/date-forms/storage";
+import {
+  isPublicFormId,
+  validateDateFormAnswers,
+} from "../../../../../lib/date-forms/schema";
 
 export const runtime = "nodejs";
 
@@ -25,7 +29,16 @@ export async function POST(
   { params }: { params: Promise<{ publicId: string }> },
 ) {
   const { publicId } = await params;
-  const form = await getDateForm(publicId);
+  if (!isPublicFormId(publicId)) {
+    return jsonError("This date form is unavailable or expired.", 404);
+  }
+
+  let form;
+  try {
+    form = await getDateForm(publicId);
+  } catch {
+    return jsonError("Date-form storage is unavailable.", 503);
+  }
 
   if (!form) return jsonError("This date form is unavailable or expired.", 404);
 
@@ -36,30 +49,14 @@ export async function POST(
     return jsonError("Invalid JSON payload.", 400);
   }
 
-  const submittedAnswers =
-    payload.answers && typeof payload.answers === "object"
-      ? (payload.answers as Record<string, unknown>)
-      : {};
+  const validation = validateDateFormAnswers(form.configuration, payload.answers);
+  if (!validation.ok) return jsonError(validation.errors[0], 400);
+
   const allowedFields = form.configuration.steps.flatMap((step) => step.fields);
-  const answers: Array<{ label: string; value: string }> = [];
-
-  for (const field of allowedFields) {
-    const rawValue = submittedAnswers[field.id];
-    const value = typeof rawValue === "string" ? rawValue.trim().slice(0, 2000) : "";
-
-    if (field.required && !value) {
-      return jsonError(`Please complete “${field.label}”.`, 400);
-    }
-    if (
-      value &&
-      (field.type === "select" || field.type === "radio") &&
-      !(field.options ?? []).includes(value)
-    ) {
-      return jsonError(`The answer for “${field.label}” is invalid.`, 400);
-    }
-
-    if (value) answers.push({ label: field.label, value });
-  }
+  const answers = allowedFields.flatMap((field) => {
+    const value = validation.value[field.id];
+    return value ? [{ label: field.label, value }] : [];
+  });
 
   const smtpHost = process.env.SMTP_HOST;
   const smtpPort = Number(process.env.SMTP_PORT ?? "465");

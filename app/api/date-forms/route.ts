@@ -3,11 +3,17 @@ import { validateDateFormConfiguration } from "../../../lib/date-forms/schema";
 
 export const runtime = "nodejs";
 
+const MAX_CONFIGURATION_BYTES = 32_000;
+
 export async function POST(request: Request) {
   let payload: unknown;
 
   try {
-    payload = await request.json();
+    const body = await request.text();
+    if (new TextEncoder().encode(body).byteLength > MAX_CONFIGURATION_BYTES) {
+      return Response.json({ error: "The date form is too large." }, { status: 413 });
+    }
+    payload = JSON.parse(body);
   } catch {
     return Response.json({ error: "Invalid JSON payload." }, { status: 400 });
   }

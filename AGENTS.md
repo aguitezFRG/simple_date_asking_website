@@ -22,7 +22,7 @@ The user-selected work route remains active for the session; default to Light wh
 - Medium: Sol performs broad, multi-stage work directly using `agent_docs/workflows/medium_route.md`; do not spawn subagents.
 - Heavy: use only when the user explicitly delegates it, following `agent_docs/workflows/heavy_route.md`.
 
-The public routes are `/`, `/?date=MM-DD-YYYY`, `/date=MM-DD-YYYY` through `app/[dateParam]/page.tsx`, and `POST /api/submit-date`.
+The public routes are `/`, `/demo`, `/create`, `/form/[publicId]`, `/date=MM-DD-YYYY` through `app/[dateParam]/page.tsx`, and the related API routes under `/api`. A legacy `date` query on `/` is carried into `/demo`.
 
 ## Authority and delegation
 
@@ -30,9 +30,9 @@ Sol exclusively owns technical, application, infrastructure, package, workflow, 
 
 ## Validation and deployment
 
-After every implementation task, Sol runs the relevant repository checks and reports actual results; never claim an unrun check passed. The consolidated local check is `pnpm check`, which runs lint, typecheck, and build. There is no formatter and no automated test suite.
+After every implementation task, Sol runs the relevant repository checks and reports actual results; never claim an unrun check passed. The consolidated local check is `pnpm check`, which runs Vitest, lint, typecheck, and build. There is no formatter or configured end-to-end test runner; browser smoke checks are separate and must be reported as such.
 
-The workflow runs checks for pull requests targeting `main`. A `workflow_dispatch` deployment is main-only, runs after checks, and requires the repository secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID`. SMTP configuration uses `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, and `DATE_RESPONSE_FROM_EMAIL`; never expose their values.
+The workflow runs checks for pull requests targeting `main`. A `workflow_dispatch` deployment is main-only, runs after checks, and requires the repository secrets `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, and `SUPABASE_CONNECTION_STRING`. It synchronizes the sensitive connection string into Vercel Production and Preview before pulling/building production. The Supabase Data API is not required. SMTP configuration uses `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, and `DATE_RESPONSE_FROM_EMAIL`; never expose any credential value.
 
 Sol owns Git state, staging, commits, branches, PRs, merges, and release/deployment actions. Stage intended paths explicitly, preserve unrelated or untracked user files, and never default to `git add -A`. Pull requests to `main` must pass the check job before merge. When deployment is in scope, dispatch the production workflow from the merged `main` branch and verify both the generated deployment URL and stable production alias.
 

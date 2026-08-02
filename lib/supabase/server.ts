@@ -1,52 +1,43 @@
-type SupabaseRequestOptions = {
-  method?: "GET" | "POST" | "PATCH" | "DELETE";
-  body?: unknown;
-  query?: URLSearchParams;
-  prefer?: string;
+import postgres, { type Sql } from "postgres";
+
+const globalForDateForms = globalThis as typeof globalThis & {
+  dateFormDatabase?: Sql;
 };
 
-function getSupabaseConfig() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
-  const secretKey = process.env.SUPABASE_SECRET_KEY;
+export function getSupabaseConnectionString() {
+  const connectionString = process.env.SUPABASE_CONNECTION_STRING;
+  if (!connectionString) throw new Error("Supabase database is not configured.");
 
-  if (!url || !secretKey) {
-    throw new Error("Supabase is not configured.");
+  let parsed: URL;
+  try {
+    parsed = new URL(connectionString);
+  } catch {
+    throw new Error("Supabase connection string is invalid.");
   }
 
-  return { secretKey, url };
+  const isPostgresProtocol =
+    parsed.protocol === "postgres:" || parsed.protocol === "postgresql:";
+  const isSupabaseHost =
+    parsed.hostname.endsWith(".supabase.com") ||
+    parsed.hostname.endsWith(".supabase.co");
+
+  if (!isPostgresProtocol || !isSupabaseHost) {
+    throw new Error("Supabase connection string is invalid.");
+  }
+
+  return connectionString;
 }
 
-export async function supabaseServerRequest<T>(
-  table: string,
-  options: SupabaseRequestOptions = {},
-): Promise<T> {
-  const { secretKey, url } = getSupabaseConfig();
-  const endpoint = new URL(`${url}/rest/v1/${encodeURIComponent(table)}`);
-
-  if (options.query) {
-    endpoint.search = options.query.toString();
+export function getSupabaseDatabase() {
+  if (!globalForDateForms.dateFormDatabase) {
+    globalForDateForms.dateFormDatabase = postgres(getSupabaseConnectionString(), {
+      connect_timeout: 10,
+      idle_timeout: 20,
+      max: 1,
+      prepare: false,
+      ssl: "require",
+    });
   }
 
-  const response = await fetch(endpoint, {
-    method: options.method ?? "GET",
-    headers: {
-      apikey: secretKey,
-      Authorization: `Bearer ${secretKey}`,
-      "Content-Type": "application/json",
-      ...(options.prefer ? { Prefer: options.prefer } : {}),
-    },
-    body: options.body === undefined ? undefined : JSON.stringify(options.body),
-    cache: "no-store",
-  });
-
-  if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(`Supabase request failed (${response.status}): ${detail}`);
-  }
-
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return (await response.json()) as T;
+  return globalForDateForms.dateFormDatabase;
 }

@@ -1,18 +1,19 @@
 # Latest Session Work
 
-The agent workflow bootstrap is complete on `main`. PR #5 finalized the expanded project guidance and task capsule after the developer/CI workflow and protected smoke support landed in PRs #2 and #4.
+Phase 0 is complete: workflow bootstrap PRs #5 and #6 were integrated on `main`, final main workflow run `30757448949` passed, and the public stable aliases passed invitation/date-route smoke checks.
 
-Implemented so far:
+Current feature work uses the genuine existing branch `agent/custom-date-form-builder`. It was selected from its 25 feature commits and task artifacts, then updated from validated `main` with the current deployment workflow retained.
 
-- Added pnpm `10.34.5`, `typecheck`, and aggregate `check` interfaces without changing dependencies or the lockfile.
-- Added pull-request checks and a main-only manually dispatched Vercel production deployment workflow.
-- Replaced the specialized executor/tester hierarchy with Light/Medium Sol-only routes and explicitly delegated, bounded Luna assistance under Sol authority.
-- Expanded verified setup, architecture, structure, decision, and task-capsule documentation.
-- Completed frozen-install, lint, typecheck, build, aggregate-check, whitespace, and protected-scope validation without changing application source or `pnpm-lock.yaml`.
-- Integrated an advisory audit by narrowing Vercel secrets to the CLI steps and validating captured deployment URLs.
-- Passed fresh read-only Codex instruction discovery for validation, deployment, Sol authority, Luna limits, and protected artifacts.
-- Confirmed that PR #1 published the initial `AGENTS.md` and `agent_docs/**` skeleton; only the expanded guidance, task capsule, and ignored `.agent-memory/**` updates remained local afterward.
-- Published PR #2, then diagnosed Vercel Authentication on generated deployment URLs and published the one-file protected-smoke fix in PR #4.
-- Passed merged-main workflow run `30756533338` and live checks on every stable production alias.
+Implemented and locally verified:
 
-Final verification: local `pnpm check`, `git diff --check`, and fresh Codex instruction discovery passed; PR #5's check and preview succeeded; main workflow run `30757238274` passed checks, deployment, readiness, and generated-URL smoke tests; and the public stable aliases served the expected invitation and date-route content. The team-scoped Vercel alias remains access-protected by design. There is still no formatter or automated test suite in the repository.
+- Two-choice landing and no-storage `/demo` route while preserving `/date=MM-DD-YYYY` and carrying a legacy root date query into demo mode.
+- Builder editing, removal, step/element reordering, element step assignment, clear three-step/ten-element feedback, strict client validation, and required preview before finalization.
+- Schema-version-1 validation, exact sender/recipient email shape, option/length/identifier checks, and stored-schema answer validation.
+- Dedicated Supabase Postgres persistence through server-only pooled `SUPABASE_CONNECTION_STRING`; the Data API remains disabled.
+- Four applied migrations with opaque public IDs, JSONB constraints, RLS, zero direct `anon`/`authenticated` grants, an explicit deny policy, optional expiry, and active-state lookup.
+- Graceful malformed, missing, disabled, expired, and storage-error presentation.
+- Vitest/jsdom/Testing Library infrastructure with 32 passing schema, UI, route, storage, identifier, access-control, demo, and default-form regression tests.
+- Passing lint, typecheck, production build, direct database smoke checks, actual local API create/retrieve/render checks, and browser builder-to-generated-link verification. All temporary rows were deleted; Supabase security and performance advisors both report zero findings.
+- Added the sensitive connection string to GitHub Actions by name and updated the main-only workflow to synchronize it into Vercel Production/Preview and smoke-test a temporary generated form with cleanup.
+
+Remaining sequence: confirm Vercel runtime variable names without revealing values; run final aggregate checks and full diff/security review; commit and push explicit feature paths; open/update the pull request; inspect checks and preview; merge; dispatch the main-only workflow; inspect logs; and smoke-test generated plus stable production URLs.

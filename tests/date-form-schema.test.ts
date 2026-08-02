@@ -1,98 +1,134 @@
-import assert from "node:assert/strict";
-import test from "node:test";
+import { describe, expect, it } from "vitest";
 import {
   MAX_FORM_ELEMENTS,
   MAX_WIZARD_STEPS,
+  isPublicFormId,
+  validateDateFormAnswers,
   validateDateFormConfiguration,
-} from "../lib/date-forms/schema.ts";
+  type DateFormConfiguration,
+} from "../lib/date-forms/schema";
+import { validConfiguration } from "./fixtures";
 
-function field(index: number) {
+function field(index: number, type = "text") {
   return {
     id: `field_${index}`,
-    type: "text",
+    type,
     label: `Question ${index}`,
     required: true,
   };
 }
 
-function validConfiguration() {
-  return {
-    version: 1,
-    title: "Date form",
-    invitationQuestion: "Would you like to be my date?",
-    successMessage: "See you there!",
-    email: {
-      sender: "sender@example.com",
-      recipient: "recipient@example.com",
-    },
-    steps: [
-      {
-        id: "step_1",
-        title: "Details",
-        fields: [field(1)],
+describe("date-form configuration validation", () => {
+  it("accepts and normalizes a valid versioned custom form", () => {
+    const configuration = validConfiguration();
+    configuration.email.sender = " SENDER@Example.com ";
+    const result = validateDateFormConfiguration(configuration);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.email.sender).toBe("sender@example.com");
+  });
+
+  it("rejects an absent or unsupported schema version", () => {
+    const configuration = { ...validConfiguration(), version: 2 };
+    const result = validateDateFormConfiguration(configuration);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors.join(" ")).toContain("schema version");
+  });
+
+  it(`rejects more than ${MAX_WIZARD_STEPS} wizard steps`, () => {
+    const configuration = validConfiguration();
+    configuration.steps = Array.from({ length: MAX_WIZARD_STEPS + 1 }, (_, index) => ({
+      id: `step_${index + 1}`,
+      title: `Step ${index + 1}`,
+      fields: [field(index + 1) as DateFormConfiguration["steps"][number]["fields"][number]],
+    }));
+    const result = validateDateFormConfiguration(configuration);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors.join(" ")).toContain("wizard steps");
+  });
+
+  it(`rejects more than ${MAX_FORM_ELEMENTS} total elements`, () => {
+    const configuration = validConfiguration();
+    configuration.steps[0].fields = Array.from(
+      { length: MAX_FORM_ELEMENTS + 1 },
+      (_, index) => field(index + 1) as DateFormConfiguration["steps"][number]["fields"][number],
+    );
+    const result = validateDateFormConfiguration(configuration);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors.join(" ")).toContain("form elements");
+  });
+
+  it("allows only sender and recipient in email configuration", () => {
+    const configuration = {
+      ...validConfiguration(),
+      email: {
+        sender: "sender@example.com",
+        recipient: "recipient@example.com",
+        subject: "Not configurable",
       },
-    ],
-  };
-}
+    };
+    const result = validateDateFormConfiguration(configuration);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.errors.join(" ")).toContain("only sender and recipient");
+  });
 
-test("accepts a valid custom date form", () => {
-  const result = validateDateFormConfiguration(validConfiguration());
-  assert.equal(result.ok, true);
+  it("rejects duplicate identifiers, options, and oversized values", () => {
+    const configuration = validConfiguration();
+    configuration.title = "x".repeat(101);
+    configuration.steps = [
+      { id: "step_1", title: "One", fields: [field(1) as never] },
+      {
+        id: "step_2",
+        title: "Two",
+        fields: [{ ...field(1, "select"), options: ["Same", "Same"] } as never],
+      },
+    ];
+    const result = validateDateFormConfiguration(configuration);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errors.join(" ")).toContain("100 characters");
+      expect(result.errors.join(" ")).toContain("unique valid identifier");
+      expect(result.errors.join(" ")).toContain("options must be unique");
+    }
+  });
 });
 
-test(`rejects more than ${MAX_WIZARD_STEPS} wizard steps`, () => {
-  const configuration = validConfiguration();
-  configuration.steps = Array.from({ length: MAX_WIZARD_STEPS + 1 }, (_, index) => ({
-    id: `step_${index + 1}`,
-    title: `Step ${index + 1}`,
-    fields: [field(index + 1)],
-  }));
+describe("date-form answer validation", () => {
+  it("rejects missing required, unknown, invalid choice, and malformed date answers", () => {
+    const configuration = validConfiguration();
+    configuration.steps[0].fields = [
+      field(1) as never,
+      { ...field(2, "select"), options: ["One", "Two"] } as never,
+      field(3, "date") as never,
+    ];
+    const result = validateDateFormAnswers(configuration, {
+      field_1: "",
+      field_2: "Three",
+      field_3: "2026-02-31",
+      injected: "value",
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      const errors = result.errors.join(" ");
+      expect(errors).toContain("Please complete");
+      expect(errors).toContain("unknown form field");
+      expect(errors).toContain("is invalid");
+      expect(errors).toContain("valid date");
+    }
+  });
 
-  const result = validateDateFormConfiguration(configuration);
-  assert.equal(result.ok, false);
-  if (!result.ok) {
-    assert(result.errors.some((error) => error.includes("wizard steps")));
-  }
+  it("accepts and trims valid answers", () => {
+    const configuration = validConfiguration();
+    const result = validateDateFormAnswers(configuration, { field_1: "  Yes  " });
+    expect(result).toEqual({ ok: true, value: { field_1: "Yes" } });
+  });
 });
 
-test(`rejects more than ${MAX_FORM_ELEMENTS} total elements`, () => {
-  const configuration = validConfiguration();
-  configuration.steps[0].fields = Array.from(
-    { length: MAX_FORM_ELEMENTS + 1 },
-    (_, index) => field(index + 1),
-  );
-
-  const result = validateDateFormConfiguration(configuration);
-  assert.equal(result.ok, false);
-  if (!result.ok) {
-    assert(result.errors.some((error) => error.includes("form elements")));
-  }
-});
-
-test("allows only sender and recipient in email configuration", () => {
-  const configuration = {
-    ...validConfiguration(),
-    email: {
-      sender: "sender@example.com",
-      recipient: "recipient@example.com",
-      subject: "Not configurable",
-    },
-  };
-
-  const result = validateDateFormConfiguration(configuration);
-  assert.equal(result.ok, false);
-  if (!result.ok) {
-    assert(result.errors.some((error) => error.includes("only sender and recipient")));
-  }
-});
-
-test("rejects duplicate field identifiers across steps", () => {
-  const configuration = validConfiguration();
-  configuration.steps = [
-    { id: "step_1", title: "One", fields: [field(1)] },
-    { id: "step_2", title: "Two", fields: [field(1)] },
-  ];
-
-  const result = validateDateFormConfiguration(configuration);
-  assert.equal(result.ok, false);
+describe("public identifiers", () => {
+  it("accepts only the exact opaque identifier format", () => {
+    expect(isPublicFormId("f_abcdefghijklmnopqrstuvwx")).toBe(true);
+    expect(isPublicFormId("123")).toBe(false);
+    expect(isPublicFormId("f_short")).toBe(false);
+    expect(isPublicFormId("f_../../sensitive-record-1")).toBe(false);
+  });
 });
