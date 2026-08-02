@@ -218,7 +218,18 @@ export async function POST(request: Request) {
     ]);
 
     return Response.json({ ok: true });
-  } catch {
+  } catch (error) {
+    if (error instanceof Error) {
+      console.error("Date response email delivery failed.", {
+        name: error.name,
+        message: error.message,
+        code: "code" in error ? error.code : undefined,
+        responseCode: "responseCode" in error ? error.responseCode : undefined,
+      });
+    } else {
+      console.error("Date response email delivery failed.", error);
+    }
+
     return jsonError("Unable to send the response email.", 502);
   }
 }

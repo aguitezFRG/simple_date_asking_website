@@ -44,3 +44,6 @@ next-env.d.ts
 # secrets
 .agent-instructions/
 .agent-memory/
+
+
+*.md
