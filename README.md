@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Simple Date Asking App
+
+A small Next.js App Router site for sharing a date invitation. The invitation is available at `/`, with optional date links in the `MM-DD-YYYY` format:
+
+- `/?date=MM-DD-YYYY`
+- `/date=MM-DD-YYYY`
+
+The response form posts to `/api/submit-date` and sends confirmation email through SMTP.
 
 ## Getting Started
 
-First, run the development server:
+Requirements: Node.js `>=20.9` locally and pnpm `10.34.5`.
+
+Install dependencies and start the development server:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in a browser. For a local email-enabled setup, copy `.env.example` to `.env.local` and fill in the SMTP settings described below. Never commit `.env.local` or expose its values.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The API reads these server-side variables:
 
-## Learn More
+- `SMTP_HOST`
+- `SMTP_PORT`
+- `SMTP_USER`
+- `SMTP_PASS`
+- `DATE_RESPONSE_FROM_EMAIL`
 
-To learn more about Next.js, take a look at the following resources:
+Do not publish the values. The SMTP variables must also be configured in the production environment for deployed email delivery.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Validation
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+pnpm lint
+pnpm typecheck
+pnpm build
+pnpm check
+```
 
-## Deploy on Vercel
+`pnpm check` runs lint, typecheck, and build. There is no formatter and no automated test suite in this repository, so no test or formatter result should be claimed.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Deployment
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The workflow at `.github/workflows/check-and-vercel-redeploy.yml` runs checks for pull requests targeting `main`. Production redeployment is started with `workflow_dispatch` from `main` only, after the check job succeeds. The GitHub repository must provide `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID` secrets, and production SMTP variables must be configured in Vercel.
+
+Vercel's Git integration may already deploy a merge to `main`. The manual workflow intentionally performs a final checked CLI deployment from the merged commit, waits for readiness, and smoke-checks `/` and `/date=07-13-2026`.
+After that workflow passes, verify the same routes on the stable production alias before declaring deployment complete.
