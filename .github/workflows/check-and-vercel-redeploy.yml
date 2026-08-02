@@ -1,0 +1,146 @@
+name: Check and Vercel redeploy
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-and-vercel-redeploy-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.34.5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run repository checks
+        run: pnpm check
+
+  deploy-production:
+    name: Deploy production
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10.34.5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Validate deployment secrets
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        shell: bash
+        run: |
+          missing=()
+          for name in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
+            if [[ -z "${!name:-}" ]]; then
+              missing+=("$name")
+            fi
+          done
+
+          if (( ${#missing[@]} > 0 )); then
+            printf '::error::Missing required repository secrets: %s\n' "${missing[*]}"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Pull production environment
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: pnpm dlx vercel@58.4.4 pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Build production deployment
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: pnpm dlx vercel@58.4.4 build --prod --token="$VERCEL_TOKEN"
+
+      - name: Deploy prebuilt production output
+        id: deploy
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        shell: bash
+        run: |
+          deploy_output="$(pnpm dlx vercel@58.4.4 deploy --prebuilt --prod --token="$VERCEL_TOKEN")"
+          deployment_url="$(printf '%s\n' "$deploy_output" | tr -d '\r' | sed -n 's/.*\(https:\/\/[^[:space:]]*\.vercel\.app\).*/\1/p' | tail -n 1)"
+
+          if [[ ! "$deployment_url" =~ ^https://[A-Za-z0-9.-]+\.vercel\.app$ ]]; then
+            echo '::error::Vercel did not return a valid deployment URL.'
+            exit 1
+          fi
+
+          printf 'url=%s\n' "$deployment_url" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for deployment readiness
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: pnpm dlx vercel@58.4.4 inspect "${{ steps.deploy.outputs.url }}" --wait --timeout=5m --token="$VERCEL_TOKEN"
+
+      - name: Smoke test generated deployment URL
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
+        shell: bash
+        run: |
+          curl --fail --silent --show-error --location --output /tmp/home.html "$DEPLOYMENT_URL/"
+          curl --fail --silent --show-error --location --output /tmp/date.html "$DEPLOYMENT_URL/date=07-13-2026"
+          grep --fixed-strings --quiet 'Would you like to be my date?' /tmp/home.html
+          grep --fixed-strings --quiet 'Would you like to be my date?' /tmp/date.html
+          grep --fixed-strings --quiet 'July 13, 2026' /tmp/date.html
+
+      - name: Write deployment summary
+        if: always()
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
+          DEPLOYMENT_RESULT: ${{ job.status }}
+        shell: bash
+        run: |
+          {
+            echo '### Production redeployment'
+            printf -- '- Result: %s\n' "$DEPLOYMENT_RESULT"
+            if [[ -n "$DEPLOYMENT_URL" ]]; then
+              printf -- '- Deployment URL: %s\n' "$DEPLOYMENT_URL"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
