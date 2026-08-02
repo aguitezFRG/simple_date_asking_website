@@ -1,6 +1,6 @@
 # Latest Session Work
 
-The technical workflow bootstrap is present on `main`; the expanded project guidance is being finalized as a separate documentation-only publication.
+The agent workflow bootstrap is complete on `main`. PR #5 finalized the expanded project guidance and task capsule after the developer/CI workflow and protected smoke support landed in PRs #2 and #4.
 
 Implemented so far:
 
@@ -15,4 +15,4 @@ Implemented so far:
 - Published PR #2, then diagnosed Vercel Authentication on generated deployment URLs and published the one-file protected-smoke fix in PR #4.
 - Passed merged-main workflow run `30756533338` and live checks on every stable production alias.
 
-Pending before this package is complete: publish the expanded tracked guidance, pass its pull-request check and preview, integrate it into current `main`, rerun the main-only production workflow, inspect its logs, and verify the generated URL and stable production aliases. There is still no formatter or automated test suite in the repository.
+Final verification: local `pnpm check`, `git diff --check`, and fresh Codex instruction discovery passed; PR #5's check and preview succeeded; main workflow run `30757238274` passed checks, deployment, readiness, and generated-URL smoke tests; and the public stable aliases served the expected invitation and date-route content. The team-scoped Vercel alias remains access-protected by design. There is still no formatter or automated test suite in the repository.
