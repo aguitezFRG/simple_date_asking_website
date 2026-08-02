@@ -8,6 +8,8 @@
 - The project uses `pnpm check` as its consolidated validation command. It runs Vitest, lint, typecheck, and build. There is no formatter or configured end-to-end runner.
 - Custom form persistence uses a dedicated Supabase Postgres project through the pooled server-only connection string. The Data API remains disabled; browsers never receive database credentials or access tables directly.
 - Saved definitions use schema version 1 JSONB and random 24-character base64url identifiers prefixed with `f_`. Database UUIDs are not exposed.
+- Direct `anon` and `authenticated` table privileges are revoked, RLS is enabled, and an explicit restrictive deny policy provides defense in depth; trusted Next.js server routes use the server-only pooled connection.
+- Email syntax validation uses bounded linear string checks. CodeQL default setup scans JavaScript/TypeScript and Actions changes and guards `main` without applying the entire protected-main ruleset to writable `agent/*` branches.
 - Pull requests to `main` run the repository check workflow. Production redeployment is a main-only manual dispatch that depends on the check job and Vercel secrets.
 - Vercel repository secrets are scoped to the individual validation and CLI steps. The workflow validates and smoke-checks the generated deployment URL; Sol separately verifies the stable production alias.
 - Generated Vercel deployment URLs can be protected even for production deployments. Smoke tests retrieve the configured automation-bypass value through the authenticated project API, use it only in request headers, and never print or persist it; stable production aliases are verified separately.
