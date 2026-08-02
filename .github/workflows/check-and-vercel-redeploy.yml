@@ -136,6 +136,7 @@ jobs:
       - name: Smoke test generated deployment URL
         env:
           DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
+          SUPABASE_CONNECTION_STRING: ${{ secrets.SUPABASE_CONNECTION_STRING }}
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
@@ -161,12 +162,8 @@ jobs:
             exit 1
           fi
 
-          curl --fail --silent --show-error --location --header "x-vercel-protection-bypass: $bypass_secret" --output /tmp/home.html "$DEPLOYMENT_URL/"
-          curl --fail --silent --show-error --location --header "x-vercel-protection-bypass: $bypass_secret" --output /tmp/date.html "$DEPLOYMENT_URL/date=07-13-2026"
-          unset bypass_secret
-          grep --fixed-strings --quiet 'Would you like to be my date?' /tmp/home.html
-          grep --fixed-strings --quiet 'Would you like to be my date?' /tmp/date.html
-          grep --fixed-strings --quiet 'July 13, 2026' /tmp/date.html
+          VERCEL_AUTOMATION_BYPASS_SECRET="$bypass_secret" node scripts/smoke-production.mjs
+          unset bypass_secret VERCEL_AUTOMATION_BYPASS_SECRET
 
       - name: Write deployment summary
         if: always()

@@ -23,7 +23,7 @@ Sol dispatches a bounded capsule, receives a report or diff, independently revie
 
 ## Verification and handoff
 
-Sol runs the applicable repository checks after integration and reports actual results. For application or package changes, `pnpm check` runs lint, typecheck, and build. There is no formatter and no automated test suite. When publication is requested, Sol requires the pull-request check to pass before merge; when deployment is in scope, Sol dispatches the production workflow from merged `main` and performs live verification.
+Sol runs the applicable repository checks after integration and reports actual results. For application or package changes, `pnpm check` runs Vitest, lint, typecheck, and build. There is no formatter or configured end-to-end runner. When publication is requested, Sol requires the pull-request check to pass before merge; when deployment is in scope, Sol dispatches the production workflow from merged `main` and performs live verification.
 
 Luna does not validate deployments, run smoke tests as owner, edit Git state, stage or commit files, open or merge PRs, or update the Sol-owned status documents. Sol reviews every Luna report/diff and makes the phase and completion decisions.
 
