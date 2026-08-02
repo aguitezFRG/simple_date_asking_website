@@ -122,10 +122,34 @@ jobs:
       - name: Smoke test generated deployment URL
         env:
           DEPLOYMENT_URL: ${{ steps.deploy.outputs.url }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
         shell: bash
         run: |
-          curl --fail --silent --show-error --location --output /tmp/home.html "$DEPLOYMENT_URL/"
-          curl --fail --silent --show-error --location --output /tmp/date.html "$DEPLOYMENT_URL/date=07-13-2026"
+          bypass_secret="$(
+            curl --fail --silent --show-error \
+              --header "Authorization: Bearer $VERCEL_TOKEN" \
+              "https://api.vercel.com/v9/projects/$VERCEL_PROJECT_ID?teamId=$VERCEL_ORG_ID" \
+              | node -e '
+                  let raw = "";
+                  process.stdin.on("data", (chunk) => raw += chunk);
+                  process.stdin.on("end", () => {
+                    const entries = Object.entries(JSON.parse(raw).protectionBypass || {});
+                    const selected = entries.find(([, value]) => value.isEnvVar) || entries[0];
+                    process.stdout.write(selected?.[0] || "");
+                  });
+                '
+          )"
+
+          if [[ -z "$bypass_secret" ]]; then
+            echo '::error::No Vercel automation bypass is configured for generated-URL smoke tests.'
+            exit 1
+          fi
+
+          curl --fail --silent --show-error --location --header "x-vercel-protection-bypass: $bypass_secret" --output /tmp/home.html "$DEPLOYMENT_URL/"
+          curl --fail --silent --show-error --location --header "x-vercel-protection-bypass: $bypass_secret" --output /tmp/date.html "$DEPLOYMENT_URL/date=07-13-2026"
+          unset bypass_secret
           grep --fixed-strings --quiet 'Would you like to be my date?' /tmp/home.html
           grep --fixed-strings --quiet 'Would you like to be my date?' /tmp/date.html
           grep --fixed-strings --quiet 'July 13, 2026' /tmp/date.html
