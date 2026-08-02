@@ -72,6 +72,21 @@ describe("date-form configuration validation", () => {
     if (!result.ok) expect(result.errors.join(" ")).toContain("only sender and recipient");
   });
 
+  it("rejects malformed and adversarial email input with bounded linear validation", () => {
+    const configuration = validConfiguration();
+    configuration.email.sender = `!@!.${"!.".repeat(50_000)}`;
+    configuration.email.recipient = "recipient @example.com";
+
+    const result = validateDateFormConfiguration(configuration);
+
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.errors).toContain("Sender email must contain at most 254 characters.");
+      expect(result.errors).toContain("Enter a valid sender email address.");
+      expect(result.errors).toContain("Enter a valid recipient email address.");
+    }
+  });
+
   it("rejects duplicate identifiers, options, and oversized values", () => {
     const configuration = validConfiguration();
     configuration.title = "x".repeat(101);

@@ -41,13 +41,29 @@ export type ValidationResult<T = DateFormConfiguration> =
   | { ok: true; value: T }
   | { ok: false; errors: string[] };
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const ID_PATTERN = /^[a-z][a-z0-9_-]{0,39}$/;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const PUBLIC_FORM_ID_PATTERN = /^f_[A-Za-z0-9_-]{24}$/;
 
 function normalizedText(value: unknown) {
   return typeof value === "string" ? value.trim() : "";
+}
+
+function isEmailAddress(value: string) {
+  if (!value || value.length > 254) return false;
+
+  const atIndex = value.indexOf("@");
+  if (atIndex <= 0 || atIndex !== value.lastIndexOf("@") || atIndex === value.length - 1) {
+    return false;
+  }
+
+  for (const character of value) {
+    if (character.trim() === "") return false;
+  }
+
+  const domain = value.slice(atIndex + 1);
+  const finalDotIndex = domain.lastIndexOf(".");
+  return finalDotIndex > 0 && finalDotIndex < domain.length - 1;
 }
 
 function boundedText(
@@ -119,8 +135,8 @@ export function validateDateFormConfiguration(input: unknown): ValidationResult 
   if (unsupportedEmailKeys.length > 0) {
     errors.push("Email configuration may contain only sender and recipient.");
   }
-  if (!EMAIL_PATTERN.test(sender)) errors.push("Enter a valid sender email address.");
-  if (!EMAIL_PATTERN.test(recipient)) errors.push("Enter a valid recipient email address.");
+  if (!isEmailAddress(sender)) errors.push("Enter a valid sender email address.");
+  if (!isEmailAddress(recipient)) errors.push("Enter a valid recipient email address.");
   if (rawSteps.length < 1) errors.push("Add at least one wizard step.");
   if (rawSteps.length > MAX_WIZARD_STEPS) {
     errors.push(`A form can contain at most ${MAX_WIZARD_STEPS} wizard steps.`);
