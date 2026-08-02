@@ -20,4 +20,9 @@ Implemented and locally verified:
 - Enabled CodeQL default setup to satisfy the repository's existing code-scanning rule. Initial JavaScript/TypeScript and Actions analyses on `main` passed in run `30760585277`.
 - Replaced the email regular expression after the first feature-head CodeQL run identified two high-severity polynomial-regex findings. Email validation now uses bounded linear string checks, and the focused regression plus complete local check pass.
 
-Remaining sequence: confirm the feature-head CodeQL result; merge PR #7; dispatch the main-only workflow; inspect its final status and logs; and smoke-test generated plus stable production URLs.
+Completed publication and verification:
+
+- Final feature-head repository check, JavaScript/TypeScript and Actions analysis, CodeQL security gate, and Vercel preview passed; the remediated preview also passed full persistence smoke with cleanup.
+- PR #7 was squash-merged as `0d676e4604e66f824e3266f347470ca4d8a812b9`.
+- Integrated-main workflow run `30761116303` passed all checks, sensitive environment synchronization, production deployment, readiness, complete generated-URL custom-form smoke, and cleanup.
+- Generated deployment `simple-date-asking-website-3rdp74dgg-aguitezfrg-s-projects.vercel.app` is ready. The three public stable aliases passed complete server-side production smoke, and `wybmd.cntest.uk` passed the final browser flow from landing through generated form plus invalid-ID handling. All temporary rows were deleted.
