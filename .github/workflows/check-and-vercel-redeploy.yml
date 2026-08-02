@@ -63,10 +63,11 @@ jobs:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          SUPABASE_CONNECTION_STRING: ${{ secrets.SUPABASE_CONNECTION_STRING }}
         shell: bash
         run: |
           missing=()
-          for name in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
+          for name in VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID SUPABASE_CONNECTION_STRING; do
             if [[ -z "${!name:-}" ]]; then
               missing+=("$name")
             fi
@@ -79,6 +80,19 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Configure Supabase runtime secret
+        env:
+          SUPABASE_CONNECTION_STRING: ${{ secrets.SUPABASE_CONNECTION_STRING }}
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        shell: bash
+        run: |
+          printf '%s' "$SUPABASE_CONNECTION_STRING" \
+            | pnpm dlx vercel@58.4.4 env add SUPABASE_CONNECTION_STRING production,preview \
+                --force --sensitive --yes --project "$VERCEL_PROJECT_ID" \
+                --scope "$VERCEL_ORG_ID" --token="$VERCEL_TOKEN"
 
       - name: Pull production environment
         env:
