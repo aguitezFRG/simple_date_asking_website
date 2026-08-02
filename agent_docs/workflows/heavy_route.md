@@ -1,43 +1,38 @@
 # Heavy Route
 
-Use this route only when the user explicitly selects the Heavy route.
+Use this route only when the user explicitly delegates the Heavy route. Heavy is an orchestration mode, not a transfer of authority: Sol remains the owner of the plan, integration, validation, Git state, deployment, and completion decision.
 
-## Main-agent ownership
+## Sol authority
 
-The main agent owns planning, work-package boundaries, integration, Git state, `agent_docs/project_progress.md`, and `agent_docs/latest_session_work.md`. Delegate bounded implementation, testing, and durable documentation without duplicating exhaustive worker analysis.
+Sol exclusively owns technical, application, infrastructure, package, workflow, test, validation, Git, secrets, deployment, live-verification, and completion decisions. Luna can explore, research, synthesize, review, or draft durable documentation. Luna can edit documentation only when the task explicitly assigns an isolated low-risk documentation change.
 
-## Delegation
+Luna never owns application implementation, packages or lockfiles, Actions, deployment configuration, environment variables, test fixes, validation, Git/PR/merge, secrets, deployment, smoke tests, phase completion, `project_progress.md`, or `latest_session_work.md`.
 
-Use the fewest workers needed. Never have more than **two active subagents concurrently**.
+Begin with one bounded read-only context stage for `project_overview.md`, `project_structure.md`, `project_progress.md`, and `latest_session_work.md`, then inspect only the smallest relevant source surface. Do not edit the two status documents for ordinary work.
 
-- `executor_luna`: default implementation worker.
-- `executor_sol`: exceptional cross-cutting work only; at most one active.
-- `tester`: independent testing and defect analysis.
-- `doc-writer`: verified durable documentation only.
+## Bounded Luna assistance
 
-Start with `executor_luna`. Add `tester` after an implementation handoff unless parallel test research is clearly independent. Add `doc-writer` only after verification. Do not maximize concurrency for its own sake.
+- Use the fewest Luna tasks needed and never more than two concurrently. Normally, only independent read-only tasks run concurrently; a writable documentation assignment runs alone with exact, non-overlapping paths.
+- Prefer read-only exploration, research, synthesis, log summarization, task-capsule drafting, or advisory review. A documentation edit must be isolated, explicitly assigned, and limited to exact paths.
+- Each capsule must include task ID, outcome, Luna effort and justification, sandbox and approval mode, exact writable paths, acceptance criteria, protected areas, validation expectations, and return format.
+- Select effort proportionately: Low for mechanical summaries, Medium for ordinary isolated analysis, High for cross-cutting work, and Max only for unusually complex, contradictory, or security-sensitive evidence. Luna supports efforts through Max, but Max is never the default.
+- Prefer native Luna when model and effort can be selected. Otherwise use an ephemeral, non-nesting `codex exec` fallback with explicit model, effort, sandbox, approval, `--ignore-user-config`, and `--ephemeral`; use live search only when needed.
+- Do not create persistent Luna TOML configuration. If selection is rejected, Sol works directly.
 
-Each task capsule must be self-contained and bounded. Include task ID, outcome, ownership, acceptance criteria, source paths, validation, protected areas, and return format. Subagents must not edit Git state or the two main-owned status files.
+Sol dispatches a bounded capsule, receives a report or diff, independently reviews it, and decides whether to integrate it. Luna may run a small self-check inside its capsule, but that evidence remains advisory. Luna reports uncertainty, blockers, touched paths, and evidence; silence or an unverified claim is not completion. Failure-analysis assignments remain read-only by default, and Sol diagnoses the evidence independently, implements every fix, and reruns affected checks.
 
-## Worker lifecycle
+## Verification and handoff
 
-Reuse one executor thread per work package and one tester thread per verification package. Production defects found by the tester return to the same executor, then return to the same tester. Replace a worker after two consecutive evidence-free turns. Report blockers with concrete evidence.
+Sol runs the applicable repository checks after integration and reports actual results. For application or package changes, `pnpm check` runs lint, typecheck, and build. There is no formatter and no automated test suite. When publication is requested, Sol requires the pull-request check to pass before merge; when deployment is in scope, Sol dispatches the production workflow from merged `main` and performs live verification.
 
-## Execution and verification
+Luna does not validate deployments, run smoke tests as owner, edit Git state, stage or commit files, open or merge PRs, or update the Sol-owned status documents. Sol reviews every Luna report/diff and makes the phase and completion decisions.
 
-1. Executor implements a coherent increment and runs the smallest relevant check.
-2. Executor repairs scoped failures until self-validation passes or a genuine blocker is evidenced.
-3. Tester runs focused checks and the required regression scope.
-4. Tester fixes only test or fixture defects; production defects return to the executor.
-5. Main agent integrates, reviews critical boundaries, and ensures repository checks run after the final change.
-6. Rerun the GitHub Actions checking workflow and Vercel redeployment workflow.
+Keep shared-state edits, checks, Git mutations, workflow runs, and deployment actions sequential. Preserve unrelated work and stop at the assigned boundary.
 
-Never weaken assertions, hide failures, or claim an unrun check passed.
+## Protected areas
 
-## Documentation
+Preserve `.env*`, `.next/`, `node_modules/`, `next-env.d.ts`, `*.tsbuildinfo`, generated assets, `pnpm-lock.yaml` unless dependencies change, and all unrelated or untracked user files. Next.js code or configuration changes require reading the relevant local guidance under `node_modules/next/dist/docs/` first.
 
-Update durable documents only with verified facts. Keep temporary reasoning and raw logs out of `agent_docs/`. At the end, report which specialized workers were called and how many times.
+## End of session
 
-## End-of-session handoff
-
-Run only when the user says `end this session`. Reconcile progress, verification, blockers, pending work, and the next entry point. Commit meaningful changes after final checks.
+Run the handoff only when the user says `end this session`. Reconcile verified progress, verification evidence, blockers, pending work, and the next entry point. Commit meaningful changes only under Sol's authority.
