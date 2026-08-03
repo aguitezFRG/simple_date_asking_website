@@ -24,6 +24,9 @@ import {
 } from "../app/api/creator-auth/route";
 import { GET as confirmCreatorEmail } from "../app/auth/confirm/route";
 
+const PUBLIC_SITE_URL = "https://simple-date-asking-website.vercel.app";
+const CUSTOM_SITE_URL = "https://wybmd.frgagz.com";
+
 beforeEach(() => {
   Object.values(auth).forEach((mock) => mock.mockReset());
   auth.createSupabaseAuthClient.mockResolvedValue({
@@ -56,8 +59,8 @@ describe("creator verification API", () => {
     expect(await expired.json()).toEqual({ status: "signed_out", email: null });
   });
 
-  it("normalizes the email and never accepts client identity or verification claims", async () => {
-    const response = await requestCreatorVerification(new Request("https://date.example/api/creator-auth", {
+  it("normalizes the email and preserves a trusted custom origin", async () => {
+    const response = await requestCreatorVerification(new Request(`${CUSTOM_SITE_URL}/api/creator-auth`, {
       method: "POST",
       body: JSON.stringify({
         email: " Creator@Example.com ",
@@ -70,7 +73,7 @@ describe("creator verification API", () => {
     expect(auth.signInWithOtp).toHaveBeenCalledWith({
       email: "creator@example.com",
       options: {
-        emailRedirectTo: "https://date.example/auth/confirm?next=/create",
+        emailRedirectTo: `${CUSTOM_SITE_URL}/auth/confirm?next=/create`,
         shouldCreateUser: true,
       },
     });
@@ -78,9 +81,24 @@ describe("creator verification API", () => {
     expect(auth.signInWithOtp.mock.calls[0][0]).not.toHaveProperty("creator_user_id");
   });
 
+  it("falls back to the canonical Vercel origin for an untrusted host", async () => {
+    await requestCreatorVerification(new Request("https://attacker.example/api/creator-auth", {
+      method: "POST",
+      body: JSON.stringify({ email: "creator@example.com" }),
+    }));
+
+    expect(auth.signInWithOtp).toHaveBeenCalledWith({
+      email: "creator@example.com",
+      options: {
+        emailRedirectTo: `${PUBLIC_SITE_URL}/auth/confirm?next=/create`,
+        shouldCreateUser: true,
+      },
+    });
+  });
+
   it("maps duplicate provider requests to a clear cooldown response", async () => {
     auth.signInWithOtp.mockResolvedValueOnce({ error: { status: 429 } });
-    const response = await requestCreatorVerification(new Request("https://date.example/api/creator-auth", {
+    const response = await requestCreatorVerification(new Request(`${PUBLIC_SITE_URL}/api/creator-auth`, {
       method: "POST",
       body: JSON.stringify({ email: "creator@example.com" }),
     }));
@@ -98,33 +116,33 @@ describe("creator verification API", () => {
 });
 
 describe("creator verification callback", () => {
-  it("exchanges a PKCE code and only redirects to the builder", async () => {
+  it("exchanges a PKCE code and returns to the trusted callback origin", async () => {
     const response = await confirmCreatorEmail(new NextRequest(
-      "https://date.example/auth/confirm?code=trusted-code&next=https://attacker.example",
+      `${CUSTOM_SITE_URL}/auth/confirm?code=trusted-code&next=https://attacker.example`,
     ));
     expect(auth.exchangeCodeForSession).toHaveBeenCalledWith("trusted-code");
     expect(response.status).toBe(303);
-    expect(response.headers.get("location")).toBe("https://date.example/create?auth=verified");
+    expect(response.headers.get("location")).toBe(`${CUSTOM_SITE_URL}/create?auth=verified`);
     expect(response.headers.get("cache-control")).toBe("private, no-store");
   });
 
   it("accepts supported token hashes and reports invalid or expired links", async () => {
     const valid = await confirmCreatorEmail(new NextRequest(
-      "https://date.example/auth/confirm?token_hash=trusted-hash&type=magiclink",
+      "https://wybmd.cntest.uk/auth/confirm?token_hash=trusted-hash&type=magiclink",
     ));
     expect(auth.verifyOtp).toHaveBeenCalledWith({ token_hash: "trusted-hash", type: "magiclink" });
-    expect(valid.headers.get("location")).toBe("https://date.example/create?auth=verified");
+    expect(valid.headers.get("location")).toBe("https://wybmd.cntest.uk/create?auth=verified");
 
     auth.verifyOtp.mockResolvedValueOnce({ error: new Error("expired") });
     const expired = await confirmCreatorEmail(new NextRequest(
-      "https://date.example/auth/confirm?token_hash=expired-hash&type=email",
+      `${PUBLIC_SITE_URL}/auth/confirm?token_hash=expired-hash&type=email`,
     ));
     expect(expired.status).toBe(303);
-    expect(expired.headers.get("location")).toBe("https://date.example/create?auth=expired");
+    expect(expired.headers.get("location")).toBe(`${PUBLIC_SITE_URL}/create?auth=expired`);
 
     const unsupported = await confirmCreatorEmail(new NextRequest(
-      "https://date.example/auth/confirm?token_hash=hash&type=phone",
+      "https://attacker.example/auth/confirm?token_hash=hash&type=phone",
     ));
-    expect(unsupported.headers.get("location")).toBe("https://date.example/create?auth=expired");
+    expect(unsupported.headers.get("location")).toBe(`${PUBLIC_SITE_URL}/create?auth=expired`);
   });
 });
