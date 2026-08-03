@@ -5,25 +5,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const PRIVATE_HEADERS = { "Cache-Control": "private, no-store" };
-
-function getPublicOrigin(request: Request) {
-  const configuredOrigin = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.SITE_URL;
-  if (configuredOrigin) {
-    try {
-      return new URL(configuredOrigin).origin;
-    } catch {
-      // Fall through to proxy headers when the configured value is invalid.
-    }
-  }
-
-  const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
-  const host = forwardedHost || request.headers.get("host");
-  const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
-  const protocol = forwardedProto || (host?.includes("localhost") ? "http" : "https");
-
-  if (host) return `${protocol}://${host}`;
-  return new URL(request.url).origin;
-}
+const PUBLIC_SITE_ORIGIN = "https://simple-date-asking-website.vercel.app";
 
 export async function GET() {
   const state = await getCreatorAuthState();
@@ -50,7 +32,7 @@ export async function POST(request: Request) {
 
   try {
     const supabase = await createSupabaseAuthClient();
-    const redirectUrl = new URL("/auth/confirm?next=/create", getPublicOrigin(request)).toString();
+    const redirectUrl = new URL("/auth/confirm?next=/create", PUBLIC_SITE_ORIGIN).toString();
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: { emailRedirectTo: redirectUrl, shouldCreateUser: true },
