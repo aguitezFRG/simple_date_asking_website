@@ -24,6 +24,8 @@ import {
 } from "../app/api/creator-auth/route";
 import { GET as confirmCreatorEmail } from "../app/auth/confirm/route";
 
+const PUBLIC_SITE_URL = "https://simple-date-asking-website.vercel.app";
+
 beforeEach(() => {
   Object.values(auth).forEach((mock) => mock.mockReset());
   auth.createSupabaseAuthClient.mockResolvedValue({
@@ -70,7 +72,7 @@ describe("creator verification API", () => {
     expect(auth.signInWithOtp).toHaveBeenCalledWith({
       email: "creator@example.com",
       options: {
-        emailRedirectTo: "https://date.example/auth/confirm?next=/create",
+        emailRedirectTo: `${PUBLIC_SITE_URL}/auth/confirm?next=/create`,
         shouldCreateUser: true,
       },
     });
@@ -104,7 +106,7 @@ describe("creator verification callback", () => {
     ));
     expect(auth.exchangeCodeForSession).toHaveBeenCalledWith("trusted-code");
     expect(response.status).toBe(303);
-    expect(response.headers.get("location")).toBe("https://date.example/create?auth=verified");
+    expect(response.headers.get("location")).toBe(`${PUBLIC_SITE_URL}/create?auth=verified`);
     expect(response.headers.get("cache-control")).toBe("private, no-store");
   });
 
@@ -113,18 +115,18 @@ describe("creator verification callback", () => {
       "https://date.example/auth/confirm?token_hash=trusted-hash&type=magiclink",
     ));
     expect(auth.verifyOtp).toHaveBeenCalledWith({ token_hash: "trusted-hash", type: "magiclink" });
-    expect(valid.headers.get("location")).toBe("https://date.example/create?auth=verified");
+    expect(valid.headers.get("location")).toBe(`${PUBLIC_SITE_URL}/create?auth=verified`);
 
     auth.verifyOtp.mockResolvedValueOnce({ error: new Error("expired") });
     const expired = await confirmCreatorEmail(new NextRequest(
       "https://date.example/auth/confirm?token_hash=expired-hash&type=email",
     ));
     expect(expired.status).toBe(303);
-    expect(expired.headers.get("location")).toBe("https://date.example/create?auth=expired");
+    expect(expired.headers.get("location")).toBe(`${PUBLIC_SITE_URL}/create?auth=expired`);
 
     const unsupported = await confirmCreatorEmail(new NextRequest(
       "https://date.example/auth/confirm?token_hash=hash&type=phone",
     ));
-    expect(unsupported.headers.get("location")).toBe("https://date.example/create?auth=expired");
+    expect(unsupported.headers.get("location")).toBe(`${PUBLIC_SITE_URL}/create?auth=expired`);
   });
 });
