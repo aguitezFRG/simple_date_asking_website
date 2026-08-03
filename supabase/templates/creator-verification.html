@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Verify your email to receive responses</title>
+  </head>
+  <body style="margin:0;background:#fff7f8;color:#3f2f33;font-family:Arial,Helvetica,sans-serif;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#fff7f8;padding:32px 16px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;background:#ffffff;border:1px solid #f0dfe3;border-radius:20px;overflow:hidden;box-shadow:0 10px 30px rgba(92,58,67,0.08);">
+            <tr>
+              <td align="center" style="background:#f8e8ec;padding:28px 24px;">
+                <div style="font-size:13px;line-height:20px;letter-spacing:1.5px;text-transform:uppercase;color:#9a6674;font-weight:700;">Simple Date Asking App</div>
+                <h1 style="margin:8px 0 0;font-size:30px;line-height:38px;color:#6f3f4c;font-weight:700;">Would you be my date?</h1>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:36px 32px 12px;">
+                <h2 style="margin:0 0 16px;font-size:25px;line-height:33px;color:#4e343b;">Verify your email to receive responses</h2>
+                <p style="margin:0;font-size:16px;line-height:26px;color:#67545a;">You’re almost ready to publish your date form. Verify <strong>{{ .Email }}</strong> so responses submitted through your form can be delivered to you.</p>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="padding:24px 32px;">
+                <a href="{{ .ConfirmationURL }}" style="display:inline-block;background:#b85f78;color:#ffffff;text-decoration:none;font-size:16px;line-height:20px;font-weight:700;padding:15px 28px;border-radius:999px;">Verify email address</a>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 32px 16px;">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#fff5f7;border:1px solid #f1dce2;border-radius:14px;">
+                  <tr>
+                    <td style="padding:18px 20px;">
+                      <p style="margin:0 0 6px;font-size:15px;line-height:22px;color:#5b3e46;font-weight:700;">You only need to verify once.</p>
+                      <p style="margin:0;font-size:14px;line-height:22px;color:#735e64;">Future forms created while signed in with this verified email can reuse the same verification.</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:8px 32px 12px;">
+                <p style="margin:0;font-size:14px;line-height:22px;color:#735e64;">Published forms remain available for three days. Save the unique form URL after publishing because the app cannot recover a lost link.</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:8px 32px 24px;">
+                <p style="margin:0;font-size:14px;line-height:22px;color:#735e64;">If you did not try to create a date form with this email address, you can safely ignore this message. No form will be published from this request unless the verification link is opened.</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 32px 32px;">
+                <p style="margin:0 0 8px;font-size:13px;line-height:20px;color:#8a737a;">Button not working? Copy and paste this link into your browser:</p>
+                <p style="margin:0;font-size:12px;line-height:18px;word-break:break-all;"><a href="{{ .ConfirmationURL }}" style="color:#9c5368;text-decoration:underline;">{{ .ConfirmationURL }}</a></p>
+              </td>
+            </tr>
+            <tr>
+              <td align="center" style="border-top:1px solid #f0dfe3;padding:22px 24px;background:#fffafb;">
+                <p style="margin:0;font-size:12px;line-height:18px;color:#967f86;">This automated email was sent by Would you be my date? Please do not reply.</p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
