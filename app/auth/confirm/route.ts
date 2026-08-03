@@ -4,6 +4,7 @@ import { createSupabaseAuthClient } from "../../../lib/supabase/auth";
 
 export const runtime = "nodejs";
 
+const PUBLIC_SITE_ORIGIN = "https://simple-date-asking-website.vercel.app";
 const EMAIL_OTP_TYPES = new Set<EmailOtpType>([
   "email",
   "magiclink",
@@ -13,33 +14,13 @@ const EMAIL_OTP_TYPES = new Set<EmailOtpType>([
   "email_change",
 ]);
 
-function getPublicOrigin(request: NextRequest) {
-  const configuredOrigin = process.env.NEXT_PUBLIC_SITE_URL ?? process.env.SITE_URL;
-  if (configuredOrigin) {
-    try {
-      return new URL(configuredOrigin).origin;
-    } catch {
-      // Fall through to proxy headers when the configured value is invalid.
-    }
-  }
-
-  const forwardedHost = request.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
-  const host = forwardedHost || request.headers.get("host");
-  const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim();
-  const protocol = forwardedProto || (host?.includes("localhost") ? "http" : "https");
-
-  if (host) return `${protocol}://${host}`;
-  return request.nextUrl.origin;
-}
-
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
   const tokenHash = request.nextUrl.searchParams.get("token_hash");
   const type = request.nextUrl.searchParams.get("type") as EmailOtpType | null;
   const next = request.nextUrl.searchParams.get("next") === "/create" ? "/create" : "/create";
-  const publicOrigin = getPublicOrigin(request);
-  const successUrl = new URL(`${next}?auth=verified`, publicOrigin);
-  const errorUrl = new URL(`${next}?auth=expired`, publicOrigin);
+  const successUrl = new URL(`${next}?auth=verified`, PUBLIC_SITE_ORIGIN);
+  const errorUrl = new URL(`${next}?auth=expired`, PUBLIC_SITE_ORIGIN);
 
   try {
     const supabase = await createSupabaseAuthClient();
