@@ -16,12 +16,6 @@ type ResponsePayload = {
   respondentEmail?: unknown;
 };
 
-type EmailCopy = {
-  heading: string;
-  intro: string;
-  closing: string;
-};
-
 function jsonError(error: string, status: number) {
   return Response.json({ error }, { status });
 }
@@ -38,7 +32,6 @@ function escapeHtml(value: string) {
 function renderResponseEmail(
   title: string,
   details: Array<{ label: string; value: string }>,
-  copy: EmailCopy,
 ) {
   const detailCards = details
     .map(
@@ -46,12 +39,8 @@ function renderResponseEmail(
         <tr>
           <td style="padding:0 0 12px;">
             <div style="background:#fff8f8;border:1px solid #f1d9de;border-radius:14px;padding:16px 18px;">
-              <div style="color:#8a5260;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px;">
-                ${escapeHtml(label)}
-              </div>
-              <div style="color:#2f2528;font-size:16px;line-height:1.55;overflow-wrap:anywhere;white-space:pre-wrap;">
-                ${escapeHtml(value)}
-              </div>
+              <div style="color:#8a5260;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px;">${escapeHtml(label)}</div>
+              <div style="color:#2f2528;font-size:16px;line-height:1.55;overflow-wrap:anywhere;white-space:pre-wrap;">${escapeHtml(value)}</div>
             </div>
           </td>
         </tr>`,
@@ -63,7 +52,7 @@ function renderResponseEmail(
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>${escapeHtml(copy.heading)}</title>
+    <title>Response to ${escapeHtml(title)}</title>
   </head>
   <body style="margin:0;padding:0;background:#f8f2f3;font-family:Arial,Helvetica,sans-serif;color:#2f2528;">
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f8f2f3;">
@@ -73,22 +62,20 @@ function renderResponseEmail(
             <tr>
               <td style="padding:30px 32px 24px;background:linear-gradient(135deg,#fff4f5 0%,#fbe8ec 100%);border-bottom:1px solid #efdde1;">
                 <div style="font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#a35f70;margin-bottom:10px;">Simple Date Asking</div>
-                <h1 style="margin:0 0 10px;font-size:28px;line-height:1.25;color:#35272b;">${escapeHtml(copy.heading)}</h1>
-                <p style="margin:0;font-size:16px;line-height:1.6;color:#6b555b;">${escapeHtml(copy.intro)}</p>
+                <h1 style="margin:0 0 10px;font-size:28px;line-height:1.25;color:#35272b;">A response was submitted</h1>
+                <p style="margin:0;font-size:16px;line-height:1.6;color:#6b555b;">A copy of the submitted answers is included below for both the form creator and respondent.</p>
               </td>
             </tr>
             <tr>
               <td style="padding:28px 32px 12px;">
                 <div style="font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#a35f70;margin-bottom:8px;">Form</div>
                 <div style="font-size:22px;font-weight:700;line-height:1.35;color:#35272b;margin-bottom:22px;">${escapeHtml(title)}</div>
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
-                  ${detailCards}
-                </table>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">${detailCards}</table>
               </td>
             </tr>
             <tr>
               <td style="padding:8px 32px 30px;">
-                <p style="margin:0;padding-top:18px;border-top:1px solid #f0e1e4;font-size:14px;line-height:1.6;color:#766167;">${escapeHtml(copy.closing)}</p>
+                <p style="margin:0;padding-top:18px;border-top:1px solid #f0e1e4;font-size:14px;line-height:1.6;color:#766167;">Keep this email for your records.</p>
               </td>
             </tr>
           </table>
@@ -183,32 +170,15 @@ export async function POST(
   });
 
   try {
-    await Promise.all([
-      transporter.sendMail({
-        from,
-        to: form.creator_email,
-        replyTo: respondentEmail.value,
-        subject: `Response to ${form.configuration.title}`,
-        text: `A response was submitted to ${form.configuration.title}.\n\n${textDetails}\n\nReply to this email to contact the respondent.`,
-        html: renderResponseEmail(form.configuration.title, details, {
-          heading: "You received a response",
-          intro: "Someone submitted your date form. Their response is included below.",
-          closing: "Reply to this email to contact the respondent directly.",
-        }),
-      }),
-      transporter.sendMail({
-        from,
-        to: respondentEmail.value,
-        replyTo: form.creator_email,
-        subject: `Your response to ${form.configuration.title}`,
-        text: `Thanks for responding to ${form.configuration.title}. Here is a copy of your submission.\n\n${textDetails}\n\nKeep this email for your records.`,
-        html: renderResponseEmail(form.configuration.title, details, {
-          heading: "Your response was sent",
-          intro: "Thanks for responding. Here is a copy of the answers you submitted.",
-          closing: "Keep this email for your records. You can reply to contact the form creator.",
-        }),
-      }),
-    ]);
+    await transporter.sendMail({
+      from,
+      to: form.creator_email,
+      bcc: respondentEmail.value,
+      replyTo: respondentEmail.value,
+      subject: `Response to ${form.configuration.title}`,
+      text: `A response was submitted.\n\n${textDetails}`,
+      html: renderResponseEmail(form.configuration.title, details),
+    });
 
     return Response.json(
       { ok: true, publicId },
