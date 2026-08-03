@@ -32,6 +32,8 @@ function escapeHtml(value: string) {
 function renderResponseEmail(
   title: string,
   details: Array<{ label: string; value: string }>,
+  heading: string,
+  description: string,
 ) {
   const detailCards = details
     .map(
@@ -62,8 +64,8 @@ function renderResponseEmail(
             <tr>
               <td style="padding:30px 32px 24px;background:linear-gradient(135deg,#fff4f5 0%,#fbe8ec 100%);border-bottom:1px solid #efdde1;">
                 <div style="font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#a35f70;margin-bottom:10px;">Simple Date Asking</div>
-                <h1 style="margin:0 0 10px;font-size:28px;line-height:1.25;color:#35272b;">A response was submitted</h1>
-                <p style="margin:0;font-size:16px;line-height:1.6;color:#6b555b;">A copy of the submitted answers is included below for both the form creator and respondent.</p>
+                <h1 style="margin:0 0 10px;font-size:28px;line-height:1.25;color:#35272b;">${escapeHtml(heading)}</h1>
+                <p style="margin:0;font-size:16px;line-height:1.6;color:#6b555b;">${escapeHtml(description)}</p>
               </td>
             </tr>
             <tr>
@@ -170,15 +172,34 @@ export async function POST(
   });
 
   try {
-    await transporter.sendMail({
-      from,
-      to: form.creator_email,
-      bcc: respondentEmail.value,
-      replyTo: respondentEmail.value,
-      subject: `Response to ${form.configuration.title}`,
-      text: `A response was submitted.\n\n${textDetails}`,
-      html: renderResponseEmail(form.configuration.title, details),
-    });
+    await Promise.all([
+      transporter.sendMail({
+        from,
+        to: form.creator_email,
+        replyTo: respondentEmail.value,
+        subject: `Response to ${form.configuration.title}`,
+        text: `It's a date!\n\nSeen below are the responses of your date.\n\n${textDetails}`,
+        html: renderResponseEmail(
+          form.configuration.title,
+          details,
+          "It's a date!",
+          "Seen below are the responses of your date",
+        ),
+      }),
+      transporter.sendMail({
+        from,
+        to: respondentEmail.value,
+        replyTo: form.creator_email,
+        subject: `Response to ${form.configuration.title}`,
+        text: `Just in case you forget\n\nHere is a copy of the responses you made.\n\n${textDetails}`,
+        html: renderResponseEmail(
+          form.configuration.title,
+          details,
+          "Just in case you forget",
+          "Here is a copy of the responses you made",
+        ),
+      }),
+    ]);
 
     return Response.json(
       { ok: true, publicId },
