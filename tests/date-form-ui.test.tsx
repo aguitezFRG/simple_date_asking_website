@@ -204,7 +204,7 @@ describe("saved form rendering", () => {
     vi.stubGlobal("fetch", fetchMock);
     render(<CustomDateForm publicId="f_abcdefghijklmnopqrstuvwx" configuration={validConfiguration()} expiresAt="2026-08-06T00:00:00.000Z" />);
     fireEvent.click(screen.getByRole("button", { name: "Yes" }));
-    fireEvent.change(screen.getByLabelText("Question 1"), { target: { value: "Absolutely" } });
+    fireEvent.change(screen.getByLabelText(/Question 1/), { target: { value: "Absolutely" } });
     fireEvent.click(screen.getByRole("button", { name: "Send response" }));
     expect(screen.getByRole("alert")).toHaveTextContent("Your email is required");
     expect(fetchMock).not.toHaveBeenCalled();
