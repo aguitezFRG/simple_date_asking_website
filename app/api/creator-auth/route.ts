@@ -1,11 +1,11 @@
 import { createSupabaseAuthClient, getCreatorAuthState } from "../../../lib/supabase/auth";
 import { isValidEmailAddress } from "../../../lib/date-forms/schema";
+import { getTrustedPublicOrigin } from "../../../lib/public-origin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const PRIVATE_HEADERS = { "Cache-Control": "private, no-store" };
-const PUBLIC_SITE_ORIGIN = "https://simple-date-asking-website.vercel.app";
 
 export async function GET() {
   const state = await getCreatorAuthState();
@@ -32,7 +32,10 @@ export async function POST(request: Request) {
 
   try {
     const supabase = await createSupabaseAuthClient();
-    const redirectUrl = new URL("/auth/confirm?next=/create", PUBLIC_SITE_ORIGIN).toString();
+    const redirectUrl = new URL(
+      "/auth/confirm?next=/create",
+      getTrustedPublicOrigin(request),
+    ).toString();
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: { emailRedirectTo: redirectUrl, shouldCreateUser: true },
