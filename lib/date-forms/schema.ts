@@ -49,8 +49,14 @@ const ID_PATTERN = /^[a-z][a-z0-9_-]{0,39}$/;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const PUBLIC_FORM_ID_PATTERN = /^f_[A-Za-z0-9_-]{24}$/;
 
-function normalizedText(value: unknown) {
-  return typeof value === "string" ? value.trim() : "";
+export function normalizedText(value: unknown) {
+  return typeof value === "string" ? value.replace(/[\r\n]+/g, " ").trim() : "";
+}
+
+function normalizedMultilineText(value: unknown) {
+  return typeof value === "string"
+    ? value.replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim()
+    : "";
 }
 
 export function isValidEmailAddress(value: string) {
@@ -290,7 +296,10 @@ export function validateDateFormAnswers(
       errors.push(`The answer for “${field.label}” must be text.`);
       continue;
     }
-    const value = normalizedText(rawValue);
+    const value =
+      field.type === "textarea"
+        ? normalizedMultilineText(rawValue)
+        : normalizedText(rawValue);
     if (value.length > MAX_ANSWER_LENGTH) {
       errors.push(`The answer for “${field.label}” is too long.`);
       continue;

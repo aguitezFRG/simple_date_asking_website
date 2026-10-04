@@ -216,7 +216,7 @@ describe("POST /api/date-forms/[publicId]/responses", () => {
     expect(storage.getDateFormLookup).toHaveBeenCalledWith(publicId);
   });
 
-  it("requires respondent email and sends tailored copies to the creator and respondent", async () => {
+  it("requires respondent email and sends only to the verified creator", async () => {
     storage.getDateFormLookup.mockResolvedValue({ status: "active", form: storedForm() });
     storage.getDateFormForSubmission.mockResolvedValue({
       ...storedForm(),
@@ -246,18 +246,15 @@ describe("POST /api/date-forms/[publicId]/responses", () => {
       { params: Promise.resolve({ publicId }) },
     );
     expect(valid.status).toBe(200);
-    expect(mailer.sendMail).toHaveBeenCalledTimes(2);
+    expect(mailer.sendMail).toHaveBeenCalledTimes(1);
     expect(mailer.sendMail).toHaveBeenCalledWith(expect.objectContaining({
       to: creator.email,
       replyTo: "respondent@example.com",
       text: expect.stringContaining("It's a date!"),
       html: expect.stringContaining("Seen below are the responses of your date"),
     }));
-    expect(mailer.sendMail).toHaveBeenCalledWith(expect.objectContaining({
+    expect(mailer.sendMail).not.toHaveBeenCalledWith(expect.objectContaining({
       to: "respondent@example.com",
-      replyTo: creator.email,
-      text: expect.stringContaining("Just in case you forget"),
-      html: expect.stringContaining("Here is a copy of the responses you made"),
     }));
   });
 });
