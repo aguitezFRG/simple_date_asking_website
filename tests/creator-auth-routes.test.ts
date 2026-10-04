@@ -73,7 +73,7 @@ describe("creator verification API", () => {
     expect(auth.signInWithOtp).toHaveBeenCalledWith({
       email: "creator@example.com",
       options: {
-        emailRedirectTo: `${CUSTOM_SITE_URL}/auth/confirm?next=/create`,
+        emailRedirectTo: `${CUSTOM_SITE_URL}`,
         shouldCreateUser: true,
       },
     });
@@ -90,7 +90,7 @@ describe("creator verification API", () => {
     expect(auth.signInWithOtp).toHaveBeenCalledWith({
       email: "creator@example.com",
       options: {
-        emailRedirectTo: `${PUBLIC_SITE_URL}/auth/confirm?next=/create`,
+        emailRedirectTo: `${PUBLIC_SITE_URL}`,
         shouldCreateUser: true,
       },
     });
@@ -132,6 +132,18 @@ describe("creator verification callback", () => {
     ));
     expect(auth.verifyOtp).toHaveBeenCalledWith({ token_hash: "trusted-hash", type: "magiclink" });
     expect(valid.headers.get("location")).toBe("https://wybmd.cntest.uk/create?auth=verified");
+
+    const signup = await confirmCreatorEmail(new NextRequest(
+      `${CUSTOM_SITE_URL}/auth/confirm?token_hash=signup-hash&type=email&next=/create`,
+    ));
+    expect(auth.verifyOtp).toHaveBeenCalledWith({ token_hash: "signup-hash", type: "email" });
+    expect(auth.exchangeCodeForSession).not.toHaveBeenCalled();
+    expect(signup.headers.get("location")).toBe(`${CUSTOM_SITE_URL}/create?auth=verified`);
+
+    const offsite = await confirmCreatorEmail(new NextRequest(
+      `${CUSTOM_SITE_URL}/auth/confirm?token_hash=h&type=magiclink&next=https://attacker.example`,
+    ));
+    expect(offsite.headers.get("location")).toBe(`${CUSTOM_SITE_URL}/create?auth=verified`);
 
     auth.verifyOtp.mockResolvedValueOnce({ error: new Error("expired") });
     const expired = await confirmCreatorEmail(new NextRequest(

@@ -3,6 +3,7 @@ import {
   MAX_FORM_ELEMENTS,
   MAX_WIZARD_STEPS,
   isPublicFormId,
+  normalizedText,
   validateDateFormAnswers,
   validateDateFormConfiguration,
   validateRespondentEmail,
@@ -26,6 +27,34 @@ describe("date-form configuration validation", () => {
 
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.value.title).toBe("Date form");
+  });
+
+  it("strips and replaces newline characters in single-line configuration strings", () => {
+    const configuration = validConfiguration();
+    configuration.title = "Date\r\nform\n";
+    configuration.invitationQuestion = "Would you like\nto be my date?\r\n";
+    configuration.successMessage = "See\r\nyou\nthere!";
+    configuration.displayDate = "Tonight\r\n";
+    configuration.steps[0].title = "Step\n1";
+    configuration.steps[0].fields[0].label = "Question\r\n1";
+
+    const result = validateDateFormConfiguration(configuration);
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.value.title).toBe("Date form");
+      expect(result.value.invitationQuestion).toBe("Would you like to be my date?");
+      expect(result.value.successMessage).toBe("See you there!");
+      expect(result.value.displayDate).toBe("Tonight");
+      expect(result.value.steps[0].title).toBe("Step 1");
+      expect(result.value.steps[0].fields[0].label).toBe("Question 1");
+    }
+
+    const blankTitleConfig = { ...validConfiguration(), title: "\r\n  \n" };
+    const blankResult = validateDateFormConfiguration(blankTitleConfig);
+    expect(blankResult.ok).toBe(false);
+    if (!blankResult.ok) {
+      expect(blankResult.errors.join(" ")).toContain("A form title is required.");
+    }
   });
 
   it("rejects an absent or unsupported schema version", () => {
@@ -134,6 +163,27 @@ describe("date-form answer validation", () => {
     const result = validateDateFormAnswers(configuration, { field_1: "  Yes  " });
     expect(result).toEqual({ ok: true, value: { field_1: "Yes" } });
   });
+
+  it("sanitizes single-line answers while preserving multiline formatting in textareas", () => {
+    const configuration = validConfiguration();
+    configuration.steps[0].fields = [
+      field(1, "text") as never,
+      field(2, "textarea") as never,
+    ];
+
+    const result = validateDateFormAnswers(configuration, {
+      field_1: "Line 1\r\nLine 2\n",
+      field_2: "Paragraph 1\r\n\r\nParagraph 2",
+    });
+
+    expect(result).toEqual({
+      ok: true,
+      value: {
+        field_1: "Line 1 Line 2",
+        field_2: "Paragraph 1\n\nParagraph 2",
+      },
+    });
+  });
 });
 
 describe("public identifiers", () => {
@@ -142,5 +192,15 @@ describe("public identifiers", () => {
     expect(isPublicFormId("123")).toBe(false);
     expect(isPublicFormId("f_short")).toBe(false);
     expect(isPublicFormId("f_../../sensitive-record-1")).toBe(false);
+  });
+});
+
+describe("normalizedText sanitization", () => {
+  it("strips and replaces newline characters with space and trims ends", () => {
+    expect(normalizedText("  hello\r\nworld  ")).toBe("hello world");
+    expect(normalizedText("foo\nbar\rbaz")).toBe("foo bar baz");
+    expect(normalizedText("\r\n\n\r")).toBe("");
+    expect(normalizedText(null)).toBe("");
+    expect(normalizedText(undefined)).toBe("");
   });
 });

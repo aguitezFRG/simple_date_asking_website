@@ -172,34 +172,19 @@ export async function POST(
   });
 
   try {
-    await Promise.all([
-      transporter.sendMail({
-        from,
-        to: form.creator_email,
-        replyTo: respondentEmail.value,
-        subject: `Response to ${form.configuration.title}`,
-        text: `It's a date!\n\nSeen below are the responses of your date.\n\n${textDetails}`,
-        html: renderResponseEmail(
-          form.configuration.title,
-          details,
-          "It's a date!",
-          "Seen below are the responses of your date",
-        ),
-      }),
-      transporter.sendMail({
-        from,
-        to: respondentEmail.value,
-        replyTo: form.creator_email,
-        subject: `Response to ${form.configuration.title}`,
-        text: `Just in case you forget\n\nHere is a copy of the responses you made.\n\n${textDetails}`,
-        html: renderResponseEmail(
-          form.configuration.title,
-          details,
-          "Just in case you forget",
-          "Here is a copy of the responses you made",
-        ),
-      }),
-    ]);
+    await transporter.sendMail({
+      from,
+      to: form.creator_email,
+      replyTo: respondentEmail.value,
+      subject: `Response to ${form.configuration.title}`,
+      text: `It's a date!\n\nSeen below are the responses of your date.\n\n${textDetails}`,
+      html: renderResponseEmail(
+        form.configuration.title,
+        details,
+        "It's a date!",
+        "Seen below are the responses of your date",
+      ),
+    });
 
     return Response.json(
       { ok: true, publicId },

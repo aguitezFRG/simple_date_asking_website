@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
   const tokenHash = request.nextUrl.searchParams.get("token_hash");
   const type = request.nextUrl.searchParams.get("type") as EmailOtpType | null;
-  const next = request.nextUrl.searchParams.get("next") === "/create" ? "/create" : "/create";
+  const next = "/create";
   const publicOrigin = getTrustedPublicOrigin(request);
   const successUrl = new URL(`${next}?auth=verified`, publicOrigin);
   const errorUrl = new URL(`${next}?auth=expired`, publicOrigin);

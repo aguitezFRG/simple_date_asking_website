@@ -37,11 +37,14 @@ Configure these Auth settings manually in the Supabase dashboard:
 
 1. Enable Email authentication and magic-link/OTP sign-in.
 2. Set the Site URL to the canonical production origin.
-3. Add exact redirect allowlist entries for:
-   - `http://localhost:3000/auth/confirm`
-   - every intended production origin followed by `/auth/confirm`
-   - intended Vercel preview origins only if preview verification is required.
-4. Configure Supabase Auth custom SMTP for production delivery and confirm the email template uses Supabase's generated confirmation URL.
+3. Add redirect allowlist entries for each origin, both bare and with `/**` (the app sends the bare origin as `emailRedirectTo`):
+   - `http://localhost:3000` and `http://localhost:3000/**`
+   - `https://wybmd.frgagz.com` and `https://wybmd.frgagz.com/**`
+   - `https://wybmd.cntest.uk` and `https://wybmd.cntest.uk/**`
+   - `https://simple-date-asking-website.vercel.app` and `https://simple-date-asking-website.vercel.app/**`
+   - other Vercel preview origins only if preview verification is required.
+4. Configure Supabase Auth custom SMTP for production delivery. Paste `supabase/templates/creator-verification.html` (Magic Link) and `supabase/templates/creator-verification-signup.html` (Confirm signup) into the dashboard email templates. They use `{{ .RedirectTo }}` plus `token_hash`. Do NOT use `{{ .ConfirmationURL }}`: it is the PKCE flow, lands on the bare origin as `/?code=`, and nothing handles it, so the creator stays signed out silently.
+   - [ ] Send a test link. The URL must contain `/auth/confirm?token_hash=`.
 5. Test a fresh link, an expired link, a returning verified session, and sign-in after session expiry.
 
 The verified account is only an ownership and response-delivery identity. There is no profile, form history, dashboard, recovery page, or link-retrieval feature.
