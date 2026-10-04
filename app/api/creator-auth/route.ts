@@ -32,10 +32,8 @@ export async function POST(request: Request) {
 
   try {
     const supabase = await createSupabaseAuthClient();
-    const redirectUrl = new URL(
-      "/auth/confirm?next=/create",
-      getTrustedPublicOrigin(request),
-    ).toString();
+    // Bare origin: the email template appends /auth/confirm via {{ .RedirectTo }}.
+    const redirectUrl = getTrustedPublicOrigin(request);
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: { emailRedirectTo: redirectUrl, shouldCreateUser: true },

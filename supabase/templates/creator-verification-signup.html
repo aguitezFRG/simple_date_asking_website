@@ -24,7 +24,7 @@
             </tr>
             <tr>
               <td align="center" style="padding:24px 32px;">
-                <a href="{{ .RedirectTo }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=magiclink&amp;next=/create" style="display:inline-block;background:#b85f78;color:#ffffff;text-decoration:none;font-size:16px;line-height:20px;font-weight:700;padding:15px 28px;border-radius:999px;">Verify email address</a>
+                <a href="{{ .RedirectTo }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email&amp;next=/create" style="display:inline-block;background:#b85f78;color:#ffffff;text-decoration:none;font-size:16px;line-height:20px;font-weight:700;padding:15px 28px;border-radius:999px;">Verify email address</a>
               </td>
             </tr>
             <tr>
@@ -52,7 +52,7 @@
             <tr>
               <td style="padding:0 32px 32px;">
                 <p style="margin:0 0 8px;font-size:13px;line-height:20px;color:#8a737a;">Button not working? Copy and paste this link into your browser:</p>
-                <p style="margin:0;font-size:12px;line-height:18px;word-break:break-all;"><a href="{{ .RedirectTo }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=magiclink&amp;next=/create" style="color:#9c5368;text-decoration:underline;">{{ .RedirectTo }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=magiclink&amp;next=/create</a></p>
+                <p style="margin:0;font-size:12px;line-height:18px;word-break:break-all;"><a href="{{ .RedirectTo }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email&amp;next=/create" style="color:#9c5368;text-decoration:underline;">{{ .RedirectTo }}/auth/confirm?token_hash={{ .TokenHash }}&amp;type=email&amp;next=/create</a></p>
               </td>
             </tr>
             <tr>
